@@ -12,3 +12,4 @@ https://www.nature.com/articles/nature13595
 ALZ GWAS #4: A genome-wide association study with 1,126,563 individuals identifies new risk loci for Alzheimer's disease
 https://pubmed.ncbi.nlm.nih.gov/34493870
 
+TODO: add references to the NealeLab GWASes
