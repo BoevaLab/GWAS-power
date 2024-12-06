@@ -2,6 +2,7 @@ import os
 import glob
 import pandas as pd
 from scipy.stats import ttest_1samp
+import numpy as np 
 
 def main(directory_gwas_combined_files, track_number_threshold=1):
     # Step 1: Perform FDR on SAD scores to determine which SNPs should be passed to Step 2 (GWAS - Replication)
@@ -23,7 +24,7 @@ def main(directory_gwas_combined_files, track_number_threshold=1):
     num_chunks = 10
     all_snp_scores_chunks = [pd.DataFrame() for _ in range(num_chunks)]
 
-    for file in combined_files[0:10]:
+    for file in combined_files:
         df = pd.read_csv(file, usecols=['snp', 'p_value'] + [col for col in pd.read_csv(file, nrows=0).columns if col.startswith('SAD')])
         df = df[df['snp'].notna() & ~df['snp'].isin(coding_region_set) & df['p_value'].notna()]
         track_col = [col for col in df.columns if col.startswith('SAD')][0]
@@ -39,28 +40,29 @@ def main(directory_gwas_combined_files, track_number_threshold=1):
     for frame in all_snp_scores_chunks:
         print(frame.head())
 
-    # Process each chunk independently for p-value computation
-    alpha = 0.05
+    # Efficient processing of p-value computation
+    alpha = 0.005
     significant_snps = []
-
-    def compute_ttest(row):
-        # Ensure all values are numeric and drop NaNs
-        numeric_values = pd.to_numeric(row[1:], errors='coerce').dropna()
-        if len(numeric_values) == 0:  # If no valid numeric values, skip this row
-            return None
-        t_stat, p_value = ttest_1samp(numeric_values, 0)
-        return p_value
 
     for chunk in all_snp_scores_chunks:
         if chunk.empty:
             continue
-        chunk['p_value'] = chunk.apply(compute_ttest, axis=1)
-        chunk = chunk.dropna(subset=['p_value'])  # Drop rows where t-test could not be performed
-        significant_snps += chunk[chunk['p_value'] < alpha]['snp'].tolist()
+        
+        # Ensure all SAD columns are numeric
+        track_data = chunk.iloc[:, 1:].apply(pd.to_numeric, errors='coerce').values  # Convert all track columns to a numpy array
+        valid_mask = ~np.isnan(track_data).all(axis=1)  # Mask to filter rows with at least one valid value
+        snp_ids = chunk.iloc[:, 0][valid_mask].values  # Keep only valid SNP IDs
+        track_data = track_data[valid_mask]  # Filter rows with valid data
+
+        # Perform t-tests in a vectorized manner
+        t_stat, p_values = ttest_1samp(track_data, popmean=0, axis=1, nan_policy='omit')
+        significant_mask = p_values < alpha  # Find significant SNPs
+        significant_snps.extend(snp_ids[significant_mask])  # Add significant SNPs to the list
 
     # Remove duplicates
     significant_snps = list(set(significant_snps))
 
+    # Output results
     print("Threshold SNPs length:")
     print(len(significant_snps))
 
@@ -76,7 +78,7 @@ def main(directory_gwas_combined_files, track_number_threshold=1):
         chr_df = final_filtered_snp_list[final_filtered_snp_list['chr'] == chr_num].sort_values(by='p_value')
         while not chr_df.empty:
             top_snp = chr_df.iloc[0]
-            result_df = result_df.append(top_snp, ignore_index=True)
+            result_df = result_df._append(top_snp, ignore_index=True)
             chr_df = chr_df[~((chr_df['pos'] - top_snp['pos']).abs() < 1000000)].reset_index(drop=True)
 
     # Implement Bonferroni-Holm p-value threshold
@@ -91,6 +93,32 @@ def main(directory_gwas_combined_files, track_number_threshold=1):
     # Output results
     print("Significant SNPs after Bonferroni-Holm correction:")
     print(significant_snps)
+
+    mdd_sig_snps = pd.read_csv(f'./gwas_window_size_analysis/snp_lists_results/id=reference/window=1000000/filtered_snps_gwas_1_sd=0.0.csv') # usually this is mdd_sig_snps.csv
+    matching_snps = pd.merge(significant_snps, mdd_sig_snps, left_on=['snp'], right_on=['snp'])
+    print(f"Number of matching rows with mdd_sig_snps.csv: {len(matching_snps)}")
+    mdd_sig_snps['left_border'] = mdd_sig_snps['pos']-1000000
+    mdd_sig_snps['right_border'] = mdd_sig_snps['pos']+1000000
+    significant_snps['left_border'] = significant_snps['pos']-1000000
+    significant_snps['right_border'] =significant_snps['pos']+1000000
+    overlap_count = 0
+    # Iterate through each interval in df1
+    for i, row1 in mdd_sig_snps.iterrows():
+        left1, right1 = row1['left_border'], row1['right_border']
+        chr1  = row1['chr']
+        
+        # Check for overlap with each interval in df2
+        for j, row2 in significant_snps.iterrows():
+            left2, right2 = row2['left_border'], row2['right_border']
+            chr2  = row2['chr']
+            
+            # Check if the intervals overlap
+            if (left1 <= right2 and right1 >= left2) and (chr1 == chr2):
+                overlap_count += 1
+                break  # Exit the loop once an overlap is found for the current interval in df1
+    
+    print("overlapping loci: " ,overlap_count)
+
 
     return
 
