@@ -1,89 +1,91 @@
 import os
-import sys
+import glob
 import pandas as pd
 from scipy.stats import ttest_1samp
 
 def main(directory_gwas_combined_files, track_number_threshold=1):
-
     # Step 1: Perform FDR on SAD scores to determine which SNPs should be passed to Step 2 (GWAS - Replication)
-    combined_files = [f for f in os.listdir(directory_gwas_combined_files) if f.endswith('.csv')]
+    combined_files = glob.glob(os.path.join(directory_gwas_combined_files, '*.csv'))
 
     # A. Establish which SNPs are coding so that they can be passed directly to Step 2
-    coding_region_set = pd.read_csv('./gwas_1_single_track_analysis/coding_region_set.csv')
-    coding_region_set = set(coding_region_set['snp'])
+    coding_region_set = set(pd.read_csv('./gwas_1_single_track_analysis/coding_region_set.csv', usecols=['snp'])['snp'])
 
-    # load the first file so that you can get the coding region snps for the particular GWAS
-    first_file_df = pd.read_csv(os.path.join(directory_gwas_combined_files, combined_files[0]))
+    # Load the first file to get the coding region SNPs for the particular GWAS
+    first_file_df = pd.read_csv(combined_files[0], usecols=['snp', 'p_value', 'chr', 'pos'] + [col for col in pd.read_csv(combined_files[0], nrows=0).columns if col.startswith('SAD')])
+    first_file_df = first_file_df.dropna(subset=['snp', 'p_value'])
     track_col_first = [col for col in first_file_df.columns if col.startswith('SAD')][0]
 
-    # coding snps list made
-    first_file_df = first_file_df[first_file_df['snp'].notna() & first_file_df['p_value'].notna()]
+    # Create coding SNPs list
     first_file_df['in_coding_region'] = first_file_df['snp'].isin(coding_region_set)
-    coding_region_list = list(set(first_file_df[(first_file_df['in_coding_region']) & (first_file_df['p_value'].notna())]['snp']))
+    coding_region_list = first_file_df[first_file_df['in_coding_region'] & first_file_df['p_value'].notna()]['snp'].unique().tolist()
 
-    # now, the filtering process. Files are organized row-wise as SNPs, column is the value for the SAD track. 
-    # Must first compute test-stats for all non-coding SNPs.
+    # Prepare to split rows across multiple DataFrames
+    num_chunks = 10
+    all_snp_scores_chunks = [pd.DataFrame() for _ in range(num_chunks)]
 
-    # data frame to hold the results of all the SAD values for each track
-    all_snp_scores = pd.DataFrame()
-    all_snp_scores['snp'] = first_file_df['snp']
-
-    for file in combined_files:
-        # load the file
-        df = pd.read_csv(os.path.join(directory_gwas_combined_files, file), low_memory=False)
-        # get only non-coding snps
+    for file in combined_files[0:10]:
+        df = pd.read_csv(file, usecols=['snp', 'p_value'] + [col for col in pd.read_csv(file, nrows=0).columns if col.startswith('SAD')])
         df = df[df['snp'].notna() & ~df['snp'].isin(coding_region_set) & df['p_value'].notna()]
         track_col = [col for col in df.columns if col.startswith('SAD')][0]
-        # the null hypothesis is that an aggregation of 33 SAD scores 
-        all_snp_scores = pd.merge(all_snp_scores, df, on='snp', how='inner')
-        all_snp_scores = all_snp_scores[['snp', track_col]]
+
+        # Merge each chunk with its share of rows
+        for i in range(num_chunks):
+            rows = df.iloc[i::num_chunks]  # Take every `num_chunks` row starting from `i`
+            if all_snp_scores_chunks[i].empty:
+                all_snp_scores_chunks[i] = rows[['snp', track_col]].copy()
+            else:
+                all_snp_scores_chunks[i] = pd.merge(all_snp_scores_chunks[i], rows[['snp', track_col]], on='snp', how='inner')
     
-    print("ALL SNPS SCORES")
-    print(all_snp_scores.head())
+    for frame in all_snp_scores_chunks:
+        print(frame.head())
 
-    # set the significance level - there was only 1 test done here?
+    # Process each chunk independently for p-value computation
     alpha = 0.05
-    snps_pvalues_list = []
-    threshold_snps = []
+    significant_snps = []
 
-    for snp in list(all_snp_scores['snp']):
-        snp_row = all_snp_scores[all_snp_scores["snp"] == snp]
-        sad_values = snp_row.iloc[:, 1:].values.flatten().tolist()
-        # compute the test stat
-        t_stat, p_value = ttest_1samp(sad_values, 0)
-        snps_pvalues_list.append({'snp': snp, 'p_value': p_value})
-        if p_value < alpha:
-            threshold_snps.insert(snp)
+    def compute_ttest(row):
+        # Ensure all values are numeric and drop NaNs
+        numeric_values = pd.to_numeric(row[1:], errors='coerce').dropna()
+        if len(numeric_values) == 0:  # If no valid numeric values, skip this row
+            return None
+        t_stat, p_value = ttest_1samp(numeric_values, 0)
+        return p_value
 
-    print("P-value SCORES")
-    snps_pvalues = pd.DataFrame(snps_pvalues_list)
-    print(snps_pvalues.head())
+    for chunk in all_snp_scores_chunks:
+        if chunk.empty:
+            continue
+        chunk['p_value'] = chunk.apply(compute_ttest, axis=1)
+        chunk = chunk.dropna(subset=['p_value'])  # Drop rows where t-test could not be performed
+        significant_snps += chunk[chunk['p_value'] < alpha]['snp'].tolist()
 
-    print("Threshold SNPs")
-    print(len(threshold_snps))
+    # Remove duplicates
+    significant_snps = list(set(significant_snps))
 
-    filtered_snp_list = first_file_df[[first_file_df['snp'].isin(threshold_snps) | first_file_df['snp'].isin(coding_region_list)]  & first_file_df['p_value'].notna() & first_file_df[ track_col_first].notna() ]
-    filtered_snp_list = filtered_snp_list[['snp', 'p_value']]
-   
-    # now implemented Bonferroni holm 
-    M = len(filtered_snp_list)
-    sorted_filtered_snp_list['reject_null'] = False
-    sorted_filtered_snp_list = filtered_snp_list.sort(by=['p_value'], ascending = True)
-    sorted_filtered_snp_list['k'] = sorted_filtered_snp_list.index + 1
+    print("Threshold SNPs length:")
+    print(len(significant_snps))
 
-    # Perform the Bonferroni-Holm test
-    for i, row in sorted_filtered_snp_list.iterrows():
-        # Compute the adjusted alpha for the current test
-        adjusted_alpha = alpha / (M - row['k'] + 1)
-        
-        # Check if the p-value is less than or equal to the adjusted alpha
-        if row['p_value'] <= adjusted_alpha:
-            sorted_filtered_snp_list.at[i, 'reject_null'] = True
-        else:
-            # Once you fail to reject a null hypothesis, subsequent tests also fail
-            break
+    filtered_snp_list_df = first_file_df.query("snp in @significant_snps or snp in @coding_region_list")
+    filtered_snp_list = filtered_snp_list_df['snp'].tolist()
 
-    # Filter for significant SNPs
+    # Implement the LD mechanism - for GWAS 1, this is just SNP location +/- 1Mb
+    final_filtered_snp_list = first_file_df[first_file_df['snp'].isin(filtered_snp_list)]
+
+    result_df = pd.DataFrame()
+
+    for chr_num in range(1, 23):
+        chr_df = final_filtered_snp_list[final_filtered_snp_list['chr'] == chr_num].sort_values(by='p_value')
+        while not chr_df.empty:
+            top_snp = chr_df.iloc[0]
+            result_df = result_df.append(top_snp, ignore_index=True)
+            chr_df = chr_df[~((chr_df['pos'] - top_snp['pos']).abs() < 1000000)].reset_index(drop=True)
+
+    # Implement Bonferroni-Holm p-value threshold
+    M = len(result_df)
+    print("number of snps filtered:", M)
+    sorted_filtered_snp_list = result_df.sort_values(by='p_value')
+    sorted_filtered_snp_list['k'] = range(1, M + 1)
+    sorted_filtered_snp_list['adjusted_alpha'] = alpha / (M - sorted_filtered_snp_list['k'] + 1)
+    sorted_filtered_snp_list['reject_null'] = sorted_filtered_snp_list['p_value'] <= sorted_filtered_snp_list['adjusted_alpha']
     significant_snps = sorted_filtered_snp_list[sorted_filtered_snp_list['reject_null']]
 
     # Output results
@@ -93,5 +95,6 @@ def main(directory_gwas_combined_files, track_number_threshold=1):
     return
 
 if __name__ == "__main__":
+    import sys
     directory_gwas_combined_files = sys.argv[1]
     main(directory_gwas_combined_files)
