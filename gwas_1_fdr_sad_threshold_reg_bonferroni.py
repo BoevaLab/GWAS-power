@@ -98,7 +98,7 @@ def main(directory_gwas_combined_files, track_number_threshold=1):
 
     print("Original SNP total:",len(first_file_df_copy))
 
-    p_value_threshold = 5e-8*(len(first_file_df)/len(final_filtered_snp_list))
+    p_value_threshold = 5e-8*(len(first_file_df_copy)/len(final_filtered_snp_list))
     print("New p-value threshold:", p_value_threshold)
 
     result_df = pd.DataFrame()

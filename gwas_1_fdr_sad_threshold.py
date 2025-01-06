@@ -91,6 +91,7 @@ def main(directory_gwas_combined_files, track_number_threshold=1):
     filtered_snp_list = filtered_snp_list_df['snp'].tolist()
 
     final_filtered_snp_list = first_file_df[first_file_df['snp'].isin(filtered_snp_list)]
+    print(len(final_filtered_snp_list))
 
     result_df = pd.DataFrame()
     for chr_num in range(1, 23):
