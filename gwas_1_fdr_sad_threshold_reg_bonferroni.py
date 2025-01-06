@@ -7,6 +7,7 @@ import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
+
 # Author; Sophie Sigfstead
 # Purpose: Begin trialling different statistical methods for thresholding SAD scores and p-value threshold
 
@@ -79,9 +80,11 @@ def main(directory_gwas_combined_files, track_number_threshold=1):
 
     all_p_values = np.array(all_p_values)
     all_snp_ids = np.array(all_snp_ids)
+    print(all_p_values[:10])
 
     # Apply FDR Correction
     fdr_significant_mask, adjusted_p_values, _, _ = multipletests(all_p_values, alpha=alpha, method='fdr_bh')
+    print(adjusted_p_values[:10])
     significant_snps = all_snp_ids[fdr_significant_mask]
 
     # Remove duplicates
@@ -91,6 +94,12 @@ def main(directory_gwas_combined_files, track_number_threshold=1):
     filtered_snp_list = filtered_snp_list_df['snp'].tolist()
 
     final_filtered_snp_list = first_file_df[first_file_df['snp'].isin(filtered_snp_list)]
+    print("Significant SNPs found:", len(final_filtered_snp_list))
+
+    print("Original SNP total:",len(first_file_df_copy))
+
+    p_value_threshold = 5e-8*(len(first_file_df)/len(final_filtered_snp_list))
+    print("New p-value threshold:", p_value_threshold)
 
     result_df = pd.DataFrame()
     for chr_num in range(1, 23):
@@ -100,68 +109,39 @@ def main(directory_gwas_combined_files, track_number_threshold=1):
             result_df = result_df._append(top_snp, ignore_index=True)
             chr_df = chr_df[~((chr_df['pos'] - top_snp['pos']).abs() < 1000000)].reset_index(drop=True)
 
+    significant_result_df = result_df[result_df['p_value']<p_value_threshold]
+
     # result_df houses the snp list filtered based on the SAD track 
-    print("Significant SNPs after FDR correction:", len(result_df))
+    print("Significant SNPs after FDR + Bonf correction:", len(significant_result_df))
 
-    # Convert significant_snps to DataFrame
-    significant_snps_df = pd.DataFrame(result_df, columns=['snp'])
-    significant_snps_df = pd.merge(significant_snps_df, first_file_df, on ='snp', how='left')
+    mdd_sig_snps = pd.read_csv(f'./gwas_window_size_analysis/snp_lists_results/id=reference/window=1000000/filtered_snps_gwas_1_sd=0.0.csv')
+    mdd_sig_snps_coding = len(mdd_sig_snps[mdd_sig_snps['snp'].isin(coding_region_list)])
+    print("Number of original coding snps: (=0)", mdd_sig_snps_coding)
 
-    mdd_sig_snps = pd.read_csv(f'./gwas_window_size_analysis/snp_lists_results/id=reference/window=1000000/filtered_snps_gwas_1_sd=0.0.csv')  # usually this is mdd_sig_snps.csv
-    
-    # Merge the two DataFrames
-    matching_snps = pd.merge(significant_snps_df, mdd_sig_snps, left_on='snp', right_on='snp')
-    print(f"OVERLAP SNPS, OUR METHOD BH vs ORIGINAL 29 SNPS: {len(matching_snps)}")
+    matching_snps = pd.merge(significant_result_df, mdd_sig_snps, left_on='snp', right_on='snp')
+    print(f"OVERLAP SNPS, OUR METHOD (FDR + Bonf) vs ORIGINAL 29 SNPS: {len(matching_snps)}")
 
     mdd_sig_snps['left_border'] = mdd_sig_snps['pos'] - 1000000
     mdd_sig_snps['right_border'] = mdd_sig_snps['pos'] + 1000000
-    significant_snps_df['left_border'] = significant_snps_df['pos']-1000000
-    significant_snps_df['right_border'] = significant_snps_df['pos']+1000000
+    significant_result_df['left_border'] = significant_result_df['pos']-1000000
+    significant_result_df['right_border'] = significant_result_df['pos']+1000000
+    significant_result_df_coding  = significant_result_df[significant_result_df['snp'].isin(coding_region_list)]
+    print("Number of significant coding snps:" , len(significant_result_df_coding))
+    print("Coding SNPS:")
+    print(significant_result_df_coding)
     
     # Overlap computation
-    overlap_count_1 = overlaps(mdd_sig_snps, significant_snps_df)
-    print("OVERLAP LOCI, OUR METHOD BH vs ORIGINAL 29 SNPS: ", overlap_count_1)
+    overlap_count_1 = overlaps(mdd_sig_snps, significant_result_df)
+    print("OVERLAP LOCI, FDR + Bonf vs ORIGINAL 29 SNPS: ", overlap_count_1)
 
-    # Create the GWAS 1 Bonferroni Holm List
-    mdd_sig_snps_bonferroni_full = first_file_df_copy.copy()# this is simply a way to get a copy of the summary stats
+    mdd_sig_snps_sorted = mdd_sig_snps.sort_values(by=['chr', 'pos'])
+    mdd_sig_snps_sorted.to_csv('mdd_sig_snps_sorted.csv')
 
-    mdd_sig_snps_bonferroni=pd.DataFrame()
-    # Implement LD mechanism +/- 1Mb around significant snp eliminated
-    for chr_num in range(1, 23):
-        chr_df = mdd_sig_snps_bonferroni_full[mdd_sig_snps_bonferroni_full['chr'] == chr_num].sort_values(by='p_value')
-        while not chr_df.empty:
-            top_snp = chr_df.iloc[0]
-            mdd_sig_snps_bonferroni= mdd_sig_snps_bonferroni._append(top_snp, ignore_index=True)
-            chr_df = chr_df[~((chr_df['pos'] - top_snp['pos']).abs() < 1000000)].reset_index(drop=True)
-
-    #mdd_sig_snps_bonferroni houses the significant snps from the original study
-    mdd_sig_snps_bonferroni['left_border'] = mdd_sig_snps_bonferroni['pos']-1000000
-    mdd_sig_snps_bonferroni['right_border'] = mdd_sig_snps_bonferroni['pos']+1000000
-    
-
-    # Compute the Bonferroni Holm List for GWAS 1 original snp list 
-    M = len(mdd_sig_snps_bonferroni) # number of tests
-    mdd_sig_snps_bonferroni = mdd_sig_snps_bonferroni.sort_values(by='p_value') # sort by p-value
-    mdd_sig_snps_bonferroni['k'] = range(1, M + 1) # create rank value
-    mdd_sig_snps_bonferroni['adjusted_alpha'] = alpha / (M - mdd_sig_snps_bonferroni['k'] + 1)
-    mdd_sig_snps_bonferroni['reject_null'] = mdd_sig_snps_bonferroni['p_value'] <= mdd_sig_snps_bonferroni['adjusted_alpha']
-    mdd_sig_snps_bonferroni = mdd_sig_snps_bonferroni[mdd_sig_snps_bonferroni['reject_null']]
-    print("Number of snps in Bonferroni-Holm GWAS 1 ORIGINAL (ie. new reference list):", len(mdd_sig_snps_bonferroni) )
-
-    # compute the intersection of the lists generated by running bonferroni holm on both GWAS 1 result sets 
-    # (= significant_snps and the list of snps generated by runing Bonferroni Holm on the GWAS 1 summary stats)
-    matching_bonf_snps = pd.merge(significant_snps_df, mdd_sig_snps_bonferroni, left_on=['snp'], right_on=['snp'])
-    print(f"OVERLAP SNPS - OUR METHOD vs ORIGINAL, BH: {len(matching_bonf_snps)}")
-
-    # overlap with the Bonferroni Holm GWAS 1 list
-    overlap_count_2 = overlaps(mdd_sig_snps_bonferroni, significant_snps_df)
-
-    print("OVERLAP LOCI - OUR METHOD vs ORIGINAL, BH: " ,overlap_count_2)
-    print("Percentage of loci recovered with our method",  float(overlap_count_2/len(mdd_sig_snps_bonferroni)*100))
-
-    return
+    significant_result_df_sorted = significant_result_df.sort_values(by=['chr', 'pos'])
+    significant_result_df_sorted.to_csv('significant_result_df_sorted.csv')
 
 if __name__ == "__main__":
     import sys
     directory_gwas_combined_files = sys.argv[1] # this should be the directory of the summary statistics - SAD score matched files
     main(directory_gwas_combined_files)
+
