@@ -209,7 +209,7 @@ if __name__ == "__main__":
     """
     Inputs to main: 
         
-        file_path_summary_stats: path to file for summary statistics for the particular trait, in tsv format
+        file_path_summary_stats: path to file for summary statistics for the particular trait, in .tsv or .tsv.bgz format
         
         directory_1000_genomes: this houses the SAD score information for all of the SNPs. It should be available in the local repository
 
@@ -244,21 +244,21 @@ if __name__ == "__main__":
     # Columns to retain from the file - modify neglog10_pval_EUR if a different ethnicity is preferred 
     selected_columns = ['chr', 'pos', 'ref', 'alt', 'neglog10_pval_EUR']
 
-    # Summary Stats Input
+    ## Summary Stats Input
     # open the file - must be .tsv.bgz or .tsv format
     file = gzip.open(file_path_summary_stats, "rt") if file_path_summary_stats.endswith(".tsv.bgz") else open(file_path_summary_stats, "r")
 
     # create a dataframe for the summary stats
     df_summary_stats = pd.concat(pd.read_csv(file, sep="\t", usecols=selected_columns, chunksize=100000),ignore_index=True)
     
-    # Track List Input
+    ## Track List Input
     # If a track list is not provided - this was mainly for testing but a default list can also be inputted or modified for chatgpt
     if track_list is None:
-        track_list = list(range(40))
+        track_list = list(range(40)) 
     # If a track list is provided - provide in csv file with no header and one column of numbers corresponding to the tracks 
     else:
         track_list_file = pd.read_csv(track_list, header=None)  # Assumes no header
-        track_list = track_list_file.iloc[:, 0].tolist() # This should be a list of numbers 
+        track_list = track_list_file.iloc[:, 0].tolist() # This should be only a list of numbers 
     
     main(df_summary_stats,  directory_1000_genomes, track_list, coding_snp_list_path)
 
