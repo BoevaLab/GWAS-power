@@ -1,0 +1,19 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "${command:pickArgs}"
+            ]
+            // ./gwas_1_and_2_summary_statistics_data/GCST90277450.tsv ./1000genomes_as_csv [0,1,9,76,78,80,81,172,179,216,240,261,278,319,326,338,355,370,403,411,421,458,462,469,499,524,552,580,582,602,644,669]
+        }
+    ]
+}
