@@ -24,6 +24,9 @@ Note that all files associated with a specific gwas are labelled beginning with 
 - Files produced as gwas_1_leading_SNPs_procedure.py runs are stored in GWAS/gwas_1_intermediate_files
 - Results of running gwas_1_leading_snps_procedure.py of each threshold t are stored in GWAS/filtered_snps_gwas_1/filtered_snps_gwas_1_threshold=<t>.csv.
 
+TODO: This seems out-of-date, there is no folder called GWAS
+TODO: Maybe we could just specify a launch file
+
 Analysis of results of GWAS 1 analysis was completed using the following data:
 - eQTL (Data available in GWAS/EQTLs)
 - FANTOM5_annotations (Data available in GWAS/FANTOM5_annotations)

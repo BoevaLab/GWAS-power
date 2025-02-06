@@ -5,7 +5,7 @@ from intervaltree import IntervalTree
 import re
 
 def threshold_calculator(df, sd, track):
-    df_with_sad = df[(df[track].notna()) & (df[track].abs() < 1) & (df[track].abs() >= 0)]
+    df_with_sad = df[(df[track].notna()) & (df[track].abs() < 1)]
   
     std_dev = df_with_sad[track].std()
     mean = df_with_sad[track].mean()

@@ -14,14 +14,14 @@ def match_csv_txt(gwas_directory, directory_1000_genomes, track_list, output_pat
     clear_directory(output_path)
 
     # Load text file data into memory and filter relevant columns
-    text_data = pd.read_csv(gwas_directory, sep='\t')
+    text_data = pd.read_csv(gwas_path, sep='\t')
     text_data = text_data[['chromosome','base_pair_location', 'p_value']]
-    text_data.set_index('base_pair_location', inplace=False)
+    text_data.set_index('base_pair_location', inplace=False) # TODO: does that even work if you're using inplace?
 
     csv_columns_no_sad = ['alt', 'chr', 'pos', 'ref', 'snp']
     csv_match_columns = ['chr', 'pos']
 
-    # Dictionary to keep track of which files have headers written
+    # Dictionary to keep track of which files have headers written TODO: what is this?
     headers_written = {sad: False for sad in track_list}
 
     # Process each CSV file in the 1000 genomes directory
@@ -30,6 +30,7 @@ def match_csv_txt(gwas_directory, directory_1000_genomes, track_list, output_pat
     for i, csv_file in enumerate(csv_files):
         csv_file_path = os.path.join(directory_1000_genomes, csv_file)
         print(f"Processing file {i+1}/{total_files}: {csv_file}")
+        # TODO: use vectorization if possible
         for chunk_index, chunk in enumerate(pd.read_csv(csv_file_path, chunksize=chunksize)):
             print(f"Processing chunk {chunk_index+1} of {csv_file}")
 
@@ -41,14 +42,17 @@ def match_csv_txt(gwas_directory, directory_1000_genomes, track_list, output_pat
             merged_chunk = chunk.merge(text_data, how='left', left_on=['chr', 'pos'], right_on=['chromosome', 'base_pair_location'])
 
             for track in track_list:
+                # TODO: What is this?
                 sad_column = f'SAD{track}'
                 if sad_column not in merged_chunk.columns:
                     print(f"{sad_column} not found in chunk {chunk_index+1} of {csv_file}")
                     continue
 
+                # TODO: What is this?
                 chunk_filtered_sad = merged_chunk[[sad_column] + csv_columns_no_sad + ['chromosome','base_pair_location', 'p_value']].reset_index(drop=True)
 
                 # Define the output file path for the current track
+                # TODO: create subfolder here with timestamp
                 track_output_file_path = os.path.join(output_path, f'result_SAD{track}.csv')
 
                 # Write the merged chunk to the appropriate file
@@ -58,18 +62,18 @@ def match_csv_txt(gwas_directory, directory_1000_genomes, track_list, output_pat
                 else:
                     chunk_filtered_sad.to_csv(track_output_file_path, index=False, mode='a', header=False)
     
-        # Load the first result file to get the matched MarkerNames
+    # Load the first result file to get the matched MarkerNames
     first_track = int(track_list[0])
     new_df = pd.read_csv(os.path.join(output_path, f'result_SAD{first_track}.csv'))
     matched_markernames = set(new_df['base_pair_location'])
     #print(matched_markernames)
 
-        # Remove matched MarkerNames from text_data
+    # Remove matched MarkerNames from text_data
     remaining_text_data = text_data[~text_data['base_pair_location'].isin(matched_markernames)].reset_index()
     print(len(remaining_text_data))
 
 
-        # Add remaining text rows to each combined file with null values for the columns from the CSV files
+    # Add remaining text rows to each combined file with null values for the columns from the CSV files
     for track in track_list:
         track_output_file_path = os.path.join(output_path, f'result_SAD{track}.csv')
         remaining_text_data_with_nulls = remaining_text_data.copy()
