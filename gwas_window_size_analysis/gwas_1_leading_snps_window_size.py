@@ -17,15 +17,16 @@ def threshold_calculator(df, sd, track):
     return upper_threshold, lower_threshold
 
   
-def main(directory_gwas_combined_files, directory_gwas_sig_snps, sd, result_storage_directory, results_path):
+def main(directory_gwas_combined_files, directory_gwas_sig_snps, sd, window_size, summary_result_storage_directory, snp_storage_directory):
     sd = float(sd)
+    window_size = float(window_size)
     
     combined_files = [f for f in os.listdir(directory_gwas_combined_files) if f.endswith('.csv')]
     
     threshold_set = set()
     non_threshold_set = set()
 
-    exon_regions = pd.read_csv('../GWAS_Data/exon_regions_v2.csv')
+    exon_regions = pd.read_csv('../../GWAS_Data/exon_regions_v2.csv')
 
     # Read the first file to initialize the in_coding_region column
     first_file_df = pd.read_csv(os.path.join(directory_gwas_combined_files, combined_files[0]))
@@ -48,7 +49,7 @@ def main(directory_gwas_combined_files, directory_gwas_sig_snps, sd, result_stor
             return True
         return False
     '''
-    coding_region_set = pd.read_csv('./gwas_1_single_track_analysis/coding_region_set.csv')
+    coding_region_set = pd.read_csv('../gwas_1_single_track_analysis/coding_region_set.csv')
     coding_region_set = set(coding_region_set['snp'])
     first_file_df = first_file_df[first_file_df['snp'].notna()]
     # Apply the function to check for overlaps
@@ -124,47 +125,36 @@ def main(directory_gwas_combined_files, directory_gwas_sig_snps, sd, result_stor
             top_snp = chr_df.iloc[0]
             result_df = pd.concat([result_df, pd.DataFrame([top_snp])], ignore_index=True)
             pos_sig_snp = top_snp['pos']
-            chr_df = chr_df[~((chr_df['pos'] < pos_sig_snp + 1000000) & (chr_df['pos'] > pos_sig_snp - 1000000))]
+            chr_df = chr_df[~((chr_df['pos'] < pos_sig_snp + window_size) & (chr_df['pos'] > pos_sig_snp - window_size))]
             chr_df = chr_df.reset_index(drop=True)
     
     
     print('Sig snps coding:', len(coding_region_df))
-
-    os.makedirs(f'{results_path}', exist_ok=True) 
-    result_df.to_csv(f'./filtered_snps_gwas_1/filtered_snps_gwas_1_threshold={sd}.csv', index=False)
+    directory = os.path.dirname(snp_storage_directory)
+    os.makedirs(directory, exist_ok=True)
+    result_df.to_csv(f'{snp_storage_directory}', index=False)
 
     print('number of snps found', len(result_df))
    
     #GWAS #1
     mdd_sig_snps = pd.read_csv(f'{directory_gwas_sig_snps}') # usually this is mdd_sig_snps.csv
     matching_snps = pd.merge(result_df, mdd_sig_snps, left_on=['chr', 'pos'], right_on=['chromosome', 'base_pair_location'])
-    print(f"Number of matching rows with mdd_sig_snps.csv: {len(matching_snps)}")
 
-    result_df['right_border'] = result_df['pos'] + 1000000
-    result_df['left_border'] = result_df['pos'] - 1000000
+    result_df['right_border'] = result_df['pos'] + window_size
+    result_df['left_border'] = result_df['pos'] - window_size
     snp_to_in_coding_region = dict(zip(all_df['snp'], all_df['in_coding_region']))
 
     # Map the in_coding_region values to result_df based on the snp column
     result_df['in_coding_region'] = result_df['snp'].map(snp_to_in_coding_region)
-    print("number of coding snps in result df")
-    print(len(result_df[result_df['in_coding_region'] == True]))
-    print(result_df[result_df['in_coding_region'] == True])
-    result_df[result_df['in_coding_region'] == True].to_csv(f'random_intermediate_files/coding_snps_our_method_{sd}.csv')
-    #mdd_sig_snps[mdd_sig_snps['in_coding_region'] == True].to_csv(f'filtered_snps_gwas_1/our_method_gwas_1_coding_snps_threshold={sd}.csv')
 
-
-    mdd_sig_snps['right_border'] = mdd_sig_snps['base_pair_location'] + 1000000
-    mdd_sig_snps['left_border'] = mdd_sig_snps['base_pair_location'] - 1000000
+    mdd_sig_snps['right_border'] = mdd_sig_snps['base_pair_location'] + window_size
+    mdd_sig_snps['left_border'] = mdd_sig_snps['base_pair_location'] - window_size
     # Create a dictionary with (chr, pos) tuples as keys and in_coding_region as values
     snp_to_in_coding_region = dict(zip(zip(all_df['chr'], all_df['pos']), all_df['in_coding_region']))
     
 
     # Create a tuple of (chromosome, base_pair_location) for each row in mdd_sig_snps and map to the dictionary
     mdd_sig_snps['in_coding_region'] = mdd_sig_snps.apply(lambda row: snp_to_in_coding_region.get((row['chromosome'], row['base_pair_location'])), axis=1)
-    print("number of coding snps in mdd")
-    print(len(mdd_sig_snps[mdd_sig_snps['in_coding_region'] == True]))
-    print( mdd_sig_snps[mdd_sig_snps['in_coding_region'] == True])
-    mdd_sig_snps[mdd_sig_snps['in_coding_region'] == True].to_csv('random_intermediate_files/their_method_gwas_1_coding_snp_list.csv')
 
 
     overlap_count = 0
@@ -200,17 +190,20 @@ def main(directory_gwas_combined_files, directory_gwas_sig_snps, sd, result_stor
     }])
 
     results_storage = pd.concat([results_storage, new_row], ignore_index=True)
-    results_storage.to_csv(result_storage_directory, index=False)
+    directory = os.path.dirname(summary_result_storage_directory)
+    os.makedirs(directory, exist_ok=True)
+    results_storage.to_csv(summary_result_storage_directory, index=False)
     return
     
 if __name__ == "__main__":
-    if len(sys.argv) != 6:
+    if len(sys.argv) != 7:
         print("Usage: python script.py <directory_gwas_combined_files> <directory_gwas_sig_snps> <sd> <result storage dir>")
     else:
         directory_gwas_combined_files = sys.argv[1]
         directory_gwas_sig_snps = sys.argv[2]
         sd = sys.argv[3]
-        summary_result_storage_directory =sys.argv[4]
-        snp_storage_directory = sys.argv[5]
-        main(directory_gwas_combined_files, directory_gwas_sig_snps, sd, summary_result_storage_directory)
+        window_size = sys.argv[4]
+        summary_result_storage_directory =sys.argv[5]
+        snp_storage_directory = sys.argv[6]
+        main(directory_gwas_combined_files, directory_gwas_sig_snps, sd, window_size, summary_result_storage_directory, snp_storage_directory)
     sys.exit()
