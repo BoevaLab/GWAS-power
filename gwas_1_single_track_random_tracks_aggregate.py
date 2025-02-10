@@ -9,6 +9,7 @@ def main():
     num_tracks_per_set = 33
     track_set_dictionary = {}
 
+    # TODO: Is it smart to exclude those? Doesn't make it fully random
     # brain tracks - to be excluded from the random track sets
     brain_tracks = {0, 1, 9, 76, 78, 80, 81, 172, 179, 216, 240, 261, 278,
             319, 326, 338, 355, 370, 403, 411, 421, 458, 462, 469,
