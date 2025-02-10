@@ -9,10 +9,8 @@ def clear_directory(directory_path):
         shutil.rmtree(directory_path)
     os.makedirs(directory_path)
 
-def match_csv_txt(gwas_path, directory_1000_genomes, track_list):
+def match_csv_txt(gwas_directory, directory_1000_genomes, track_list, output_path):
     chunksize = 100000
-    output_path = './gwas_random_tracks_matching'
-    # TODO: Why do this? Maybe you can just timestamp the data instead?
     clear_directory(output_path)
 
     # Load text file data into memory and filter relevant columns
@@ -88,17 +86,17 @@ def match_csv_txt(gwas_path, directory_1000_genomes, track_list):
 
     print("Processing complete.")
 
-def main(directory_gwas_study_text, directory_1000_genomes, track_list):
-    #TODO This doesn't look very safe, maybe add a check to see if it really returns a correct list? Or just work with a more restrictive format right away?
+def main(directory_gwas_study_text, directory_1000_genomes, track_list, output_path):
     track_list = ast.literal_eval(track_list)  # Convert string representation of list to actual list
-    match_csv_txt(directory_gwas_study_text, directory_1000_genomes, track_list)
+    match_csv_txt(directory_gwas_study_text, directory_1000_genomes, track_list, output_path)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4:
-        print("Usage: python script.py  v")
+    if len(sys.argv) != 5:
+        print("Usage: python gwas_1_matching.py  v")
     else:
         directory_gwas_study_text = sys.argv[1]
         directory_1000_genomes = sys.argv[2]
         track_list = sys.argv[3]
-        main(directory_gwas_study_text, directory_1000_genomes, track_list)
+        output_path = sys.argv[4]
+        main(directory_gwas_study_text, directory_1000_genomes, track_list, output_path)
     sys.exit()
