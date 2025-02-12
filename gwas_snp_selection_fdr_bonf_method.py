@@ -57,7 +57,7 @@ def window_elimination(df, WINDOW_SIZE):
             chr_df = chr_df[~((chr_df['pos'] - top_snp['pos']).abs() < WINDOW_SIZE)].reset_index(drop=True)
     return result_df 
 
-def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_path):
+def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_path, log_pvals=True):
     """
 
     1. Process GWAS summary stats and merge with SAD track information from 1000 Genomes files.
@@ -80,8 +80,11 @@ def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_p
     ## STEP 1: Merge the summary statistics with the SAD value data
 
     # Reverse the -log(pvalue) operation 
-    df_summary_stats['p_value'] = 10 ** (-df_summary_stats['neglog10_pval_EUR'])
-    df_summary_stats.drop(columns=['neglog10_pval_EUR'], inplace=True)
+    # TODO: Would probably be good to specify what columns the 
+    # df needs to have and what they should be named
+    if(log_pvals):
+        df_summary_stats['p_value'] = 10 ** (-df_summary_stats['neglog10_pval_EUR'])
+        df_summary_stats.drop(columns=['neglog10_pval_EUR'], inplace=True)
 
     # Drop snps without p_value 
     df_summary_stats.dropna(subset=['p_value'], inplace=True)
@@ -127,7 +130,7 @@ def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_p
     df_summary_stats_result = pd.concat(dataframes, ignore_index=True)
 
     ## STEP 2: assign coding region value 
-
+    # TODO: same here, would probably be good to verify the assumptions or at least state them or even give an interface to fill
     coding_region_set = list(pd.read_csv(coding_snp_list_path)['snp'])
     df_summary_stats_result['in_coding_region'] = df_summary_stats_result['snp'].isin(coding_region_set)
    

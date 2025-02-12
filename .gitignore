@@ -1,0 +1,5 @@
+.env
+sumstats_head_1_2.tsv:Zone.Identifier
+__pycache__/curate_sad_tracks.cpython-312.pyc
+__pycache__/gwas_snp_selection_fdr_bonf_method.cpython-312.pyc
+1kg_dummy/1000G.MAF_threshold=0.005.22_combined.csv:Zone.Identifier
