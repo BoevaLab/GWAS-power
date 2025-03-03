@@ -249,6 +249,8 @@ if __name__ == "__main__":
     file = gzip.open(file_path_summary_stats, "rt") if file_path_summary_stats.endswith(".tsv.bgz") else open(file_path_summary_stats, "r")
 
     # create a dataframe for the summary stats
+    # TODO: Why set a chunksize and then concatenate? Is this the same as just
+    #   reading it in as a whole?
     df_summary_stats = pd.concat(pd.read_csv(file, sep="\t", usecols=selected_columns, chunksize=100000),ignore_index=True)
     
     ## Track List Input

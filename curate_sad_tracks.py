@@ -712,7 +712,7 @@ def generate_sad_tracks(phenotype, model="gpt-4o", no_lookup=False, overwrite=Fa
     rows = df.loc[df['phenotype'] == phenotype]
     record_available = not rows.empty
 
-    if(not no_lookup & (model=="gpt-4o") & record_available):
+    if((not no_lookup) & (model=="gpt-4o") & record_available):
         sad_tracks = rows.iloc[0]["sad_track_indices"]
         return [int(str) for str in sad_tracks.split(", ")]
     
@@ -737,14 +737,12 @@ def generate_sad_tracks(phenotype, model="gpt-4o", no_lookup=False, overwrite=Fa
 
     selected_tracks = [int(tissue.name[1:]) for tissue in event.category1+event.category2]
 
-    if((model=="gpt-4o") & overwrite):
+    if(model=="gpt-4o"):
         if(record_available):
-            df.loc[df['phenotype'] == phenotype][0] = {"phenotype":phenotype, "sad_track_indices":", ".join(str(x) for x in selected_tracks)}
+            if(overwrite):
+                df.loc[df['phenotype'] == phenotype][0] = {"phenotype":phenotype, "sad_track_indices":", ".join(str(x) for x in selected_tracks)}
         else:
             df.loc[len(df)]={"phenotype":phenotype, "sad_track_indices":", ".join(str(x) for x in selected_tracks)}
         df.to_csv("phenotype_sad_track_indices.csv", sep=";", index=False)
 
     return selected_tracks
-
-phenotype="Major Depressive Disorder"
-print(generate_sad_tracks(phenotype=phenotype, no_lookup=False))
