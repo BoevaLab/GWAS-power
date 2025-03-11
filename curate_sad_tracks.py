@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 import pandas as pd
+import json
 
 class tissues1(str, Enum):
     t0 = "cerebellum male adult (27 years) and male adult (35 years)"
@@ -698,38 +699,72 @@ class Tracks(BaseModel):
     category2: list[tissues2]
     subcategory: str
 
-# The chosen sad tracks are somewhat random, so they change if they are genereated again.
-# By default, if there were already sad tracks chosen for a phenotype, the method will just look them up in the csv table.
-# To avoid this, the parameter no_lookup can be set to generate the selction again. Depending how the overwrite parameter is set,
-# overwrite the values in the csv will be overwritten.
-# (There is probably better ways to manage the data.)
-# (Also the overwrite doesn't work yet...)
+# TODO: The chosen sad tracks are somewhat random, so they change if they are genereated again.
 
-def generate_sad_tracks(phenotype, model="gpt-4o", no_lookup=False, overwrite=False):
+def generate_sad_tracks(phenotype, model="gpt-4o", perform_lookup=True, overwrite=False):
+    """
+    Returns a list of relevant SAD tracks for the phenotype using an OpenAI language model.
 
-    df = pd.read_csv("phenotype_sad_track_indices.csv", sep=";")
+    Parameters:
+        phenotype (str): Name or description of the phenotype to prompt the language model.
+        model (str): Which OpenAI model to use, eg "gpt-4o", "o3-mini", ...
+        perform_lookup (bool): Whether a matching result from an earlier function call should be returned if available.
+        overwrite (bool): Whether an earlier value should be overwritten.
 
-    rows = df.loc[df['phenotype'] == phenotype]
-    record_available = not rows.empty
+    Returns:
+        sad_tracks (list[int]): The indices of the selected SAD tracks.
+    """
 
-    if((not no_lookup) & (model=="gpt-4o") & record_available):
-        sad_tracks = rows.iloc[0]["sad_track_indices"]
-        return [int(str) for str in sad_tracks.split(", ")]
+    is_4o = model=="gpt-4o"
+    is_o3 = model=="o3-mini"
+
+    # Reading data back from JSON file
+    if(is_4o):
+        file_path = "track_lists_4o.json"
+    elif(is_o3):
+        file_path = "track_lists_o3.json"
+
+    if(is_4o or is_o3):
+        with open(file_path, "r") as json_file:
+            loaded_data = json.load(json_file)
+        sad_tracks = loaded_data.get(phenotype)
+        record_available = not (sad_tracks is None)
+
+        if(perform_lookup & record_available):
+            if isinstance(sad_tracks, list) and all(isinstance(n, int) for n in sad_tracks):
+                print(f"Returning pre-cached value from {file_path}")
+                return sad_tracks
     
     load_dotenv(".env")
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-    completion = client.beta.chat.completions.parse(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": """You are an expert in human biology and you are working in a project exploring the human genome. There are two sets of tissue samples that were sequenced,
-            their descriptions are names of cell lines or descriptions of the sample. These descriptions are enumerated in the two classes "tissues1" and "tissues2". The team plans to study several phenotypes
-            and therefore has to choose the most relevant sequencing tracks.
+    # Introduce max length? Restrict duplicates?
+    # Be absolutely certain to avoid duplicates! doesn't seem to help on its own.
+
+    conversational_prompt="""You are an expert in human biology and you are working in a project exploring the human genome. There are two sets of tissue samples that were sequenced,
+            their descriptions are names of cell lines or descriptions of the sample. These descriptions are enumerated in the two classes "tissues1" and "tissues2".
+            The team plans to study several phenotypes and therefore has to choose the most relevant sequencing tracks.
             Phenotypes might be shortened to keywords.
-            For any provided input, first decide what phenotype is investigated, then assemble a list of functions or anatomical structures of the human body that will influence this phenotype most, then
-            return the sequenced tissues that contain the clearest information on those functions."""},
+            For any provided input, first decide what phenotype is being investigated, then assemble a list of functions or anatomical structures of the human body that
+            will influence this phenotype most, then return only the sequenced tissues that contain the clearest information on those functions, excluding the tissues that have only
+            limited relevance.
+            """
+
+    reasoning_prompt = """For a genetics project, we have data from different tissue samples.
+            You will be provided with the name of a biological trait and you are to select the most relevant tissue samples for this trait.
+            Only tissues with 85% relevance or higher should be included. The possible tissues are stored in the Enums "tissues1" and tissues2".
+            """
+    
+    prompt = reasoning_prompt if is_o3 else conversational_prompt
+
+    completion = client.beta.chat.completions.parse(
+        model=model,
+        messages=[
+            {"role": "system", "content": prompt},
             {"role": "user", "content": phenotype},
         ],
+        temperature=0.5,
+        # top_p=0.3,
         response_format=Tracks,
     )
 
@@ -737,12 +772,22 @@ def generate_sad_tracks(phenotype, model="gpt-4o", no_lookup=False, overwrite=Fa
 
     selected_tracks = [int(tissue.name[1:]) for tissue in event.category1+event.category2]
 
-    if(model=="gpt-4o"):
-        if(record_available):
-            if(overwrite):
-                df.loc[df['phenotype'] == phenotype][0] = {"phenotype":phenotype, "sad_track_indices":", ".join(str(x) for x in selected_tracks)}
-        else:
-            df.loc[len(df)]={"phenotype":phenotype, "sad_track_indices":", ".join(str(x) for x in selected_tracks)}
-        df.to_csv("phenotype_sad_track_indices.csv", sep=";", index=False)
+    selected_tracks.sort()
+
+    length_with_duplicates = len(selected_tracks)
+
+    selected_tracks = list(set(selected_tracks))
+
+    print(f"Removed {length_with_duplicates-len(selected_tracks)} duplicates.")
+
+    # with open(file_path, "w") as json_file:
+    #     json.dump(loaded_data, json_file, indent=4)
+
+    if(is_4o or is_o3):
+        if((not overwrite) or record_available):
+            loaded_data[phenotype] = selected_tracks
+            # loaded_data.update({phenotype, selected_tracks})
+            with open(file_path, "w") as json_file:
+                json.dump(loaded_data, json_file, indent=4)
 
     return selected_tracks
