@@ -6,6 +6,11 @@ from dotenv import load_dotenv
 import pandas as pd
 import json
 
+file = "target_dnase_ataq_tracks_labelled.csv"
+tracks_df = pd.read_csv(file, usecols=["index", "target_labels"])
+tracks_dict = tracks_df.set_index("index").to_dict()
+tracks_dict = tracks_dict['target_labels']
+
 class tissues1(str, Enum):
     t0 = "cerebellum male adult (27 years) and male adult (35 years)"
     t1 = "frontal cortex male adult (27 years) and male adult (35 years)"
@@ -697,11 +702,10 @@ class tissues2(str, Enum):
 class Tracks(BaseModel):
     category1: list[tissues1]
     category2: list[tissues2]
-    subcategory: str
 
 # TODO: The chosen sad tracks are somewhat random, so they change if they are genereated again.
 
-def generate_sad_tracks(phenotype, model="gpt-4o", perform_lookup=True, overwrite=False):
+def generate_sad_tracks(phenotype, model="gpt-4o", perform_lookup=True, perform_union=True):
     """
     Returns a list of relevant SAD tracks for the phenotype using an OpenAI language model.
 
@@ -709,7 +713,7 @@ def generate_sad_tracks(phenotype, model="gpt-4o", perform_lookup=True, overwrit
         phenotype (str): Name or description of the phenotype to prompt the language model.
         model (str): Which OpenAI model to use, eg "gpt-4o", "o3-mini", ...
         perform_lookup (bool): Whether a matching result from an earlier function call should be returned if available.
-        overwrite (bool): Whether an earlier value should be overwritten.
+        perform_union (bool): Whether earlier indices should be kept.
 
     Returns:
         sad_tracks (list[int]): The indices of the selected SAD tracks.
@@ -721,14 +725,21 @@ def generate_sad_tracks(phenotype, model="gpt-4o", perform_lookup=True, overwrit
     # Reading data back from JSON file
     if(is_4o):
         file_path = "track_lists_4o.json"
+        file_path_unions = "num_unions_4o.json"
     elif(is_o3):
         file_path = "track_lists_o3.json"
+        file_path_unions = "num_unions_o3.json"
 
     if(is_4o or is_o3):
         with open(file_path, "r") as json_file:
             loaded_data = json.load(json_file)
+        with open(file_path_unions, "r") as json_file:
+            unions_data = json.load(json_file)
         sad_tracks = loaded_data.get(phenotype)
         record_available = not (sad_tracks is None)
+        num_unions = unions_data.get(phenotype)
+        if num_unions is None:
+            num_unions = 0
 
         if(perform_lookup & record_available):
             if isinstance(sad_tracks, list) and all(isinstance(n, int) for n in sad_tracks):
@@ -741,18 +752,25 @@ def generate_sad_tracks(phenotype, model="gpt-4o", perform_lookup=True, overwrit
     # Introduce max length? Restrict duplicates?
     # Be absolutely certain to avoid duplicates! doesn't seem to help on its own.
 
-    conversational_prompt="""You are an expert in human biology and you are working in a project exploring the human genome. There are two sets of tissue samples that were sequenced,
-            their descriptions are names of cell lines or descriptions of the sample. These descriptions are enumerated in the two classes "tissues1" and "tissues2".
-            The team plans to study several phenotypes and therefore has to choose the most relevant sequencing tracks.
+    conversational_prompt="""You are an expert in human biology and you are working in a project
+            exploring the human genome. There are two sets of tissue samples that were sequenced,
+            their descriptions are names of cell lines or descriptions of the sample. These
+            descriptions are enumerated in the two classes "tissues1" and "tissues2".
+            The team plans to study several phenotypes and therefore has to choose the most
+            relevant sequencing tracks.
             Phenotypes might be shortened to keywords.
-            For any provided input, first decide what phenotype is being investigated, then assemble a list of functions or anatomical structures of the human body that
-            will influence this phenotype most, then return only the sequenced tissues that contain the clearest information on those functions, excluding the tissues that have only
+            For any provided input, first decide what phenotype is being investigated, then
+            assemble a list of functions or anatomical structures of the human body that
+            will influence this phenotype most, then return only the sequenced tissues or cell lines that 
+            contain the clearest information on those functions, excluding the samples that have only
             limited relevance.
             """
 
     reasoning_prompt = """For a genetics project, we have data from different tissue samples.
             You will be provided with the name of a biological trait and you are to select the most relevant tissue samples for this trait.
-            Only tissues with 85% relevance or higher should be included. The possible tissues are stored in the Enums "tissues1" and tissues2".
+            For example, if the input is the name of a blood protein, relevant tissues might be related to blood, bone marrow or the liver.
+            If the input is a mineral found in the body, relevant tissues might be from organs that regulate its levels in the organism.
+            The options for the tissues are stored in the Enums "tissues1" and tissues2".
             """
     
     prompt = reasoning_prompt if is_o3 else conversational_prompt
@@ -763,31 +781,39 @@ def generate_sad_tracks(phenotype, model="gpt-4o", perform_lookup=True, overwrit
             {"role": "system", "content": prompt},
             {"role": "user", "content": phenotype},
         ],
-        temperature=0.5,
+        # temperature=0.5,
         # top_p=0.3,
         response_format=Tracks,
     )
 
     event = completion.choices[0].message.parsed
 
-    selected_tracks = [int(tissue.name[1:]) for tissue in event.category1+event.category2]
-
-    selected_tracks.sort()
+    if event is not None:
+        selected_tracks = [int(tissue.name[1:]) for tissue in event.category1+event.category2]
+    else:
+        selected_tracks=[]
+        print("GPT output is None, use empty track_list")
 
     length_with_duplicates = len(selected_tracks)
-
     selected_tracks = list(set(selected_tracks))
+    selected_tracks.sort()
 
     print(f"Removed {length_with_duplicates-len(selected_tracks)} duplicates.")
 
-    # with open(file_path, "w") as json_file:
-    #     json.dump(loaded_data, json_file, indent=4)
-
     if(is_4o or is_o3):
-        if((not overwrite) or record_available):
+        if(not record_available):
             loaded_data[phenotype] = selected_tracks
-            # loaded_data.update({phenotype, selected_tracks})
-            with open(file_path, "w") as json_file:
-                json.dump(loaded_data, json_file, indent=4)
+            unions_data[phenotype] = 0
+        elif(perform_union):
+            selected_tracks=list(set(loaded_data[phenotype] + selected_tracks))
+            loaded_data[phenotype] = selected_tracks
+            loaded_data[phenotype].sort()
+            num_unions += 1
+            unions_data[phenotype] = num_unions
+        
+        with open(file_path, "w") as json_file:
+            json.dump(loaded_data, json_file, indent=4)
+        with open(file_path_unions, "w") as json_file:
+            json.dump(unions_data, json_file, indent=4)
 
     return selected_tracks
