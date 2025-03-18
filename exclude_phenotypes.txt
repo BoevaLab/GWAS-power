@@ -1,0 +1,6 @@
+# List of phenotypes to include
+# Anything after the first number is ignored
+# Enter data in the form:
+# <index in the phenotype manifest> <any further information (ignored when reading in the data)>
+113 (Cereal type)
+3553 (Current employment status)

@@ -1,836 +1,102 @@
 {
-    "3mm weak meridian (left)": [
-        44,
-        343
-    ],
-    "Shellfish intake": [
-        257,
-        27,
-        89,
-        26,
-        59
-    ],
-    "Albumin": [
+    "0": [
         26,
         27,
-        242,
-        347,
-        448
+        347
     ],
-    "Alkaline phosphatase": [
+    "1": [
         2,
-        19,
-        26,
-        27,
-        43,
-        347,
-        413,
-        445,
-        573
-    ],
-    "Alanine aminotransferase": [
-        26,
-        27,
-        242,
-        347,
-        448
-    ],
-    "Apolipoprotein A": [
-        26,
-        27,
-        242,
-        347,
-        452
-    ],
-    "Apolipoprotein B": [
-        26,
-        27,
-        59,
-        347
-    ],
-    "Urea": [
-        26,
-        27,
-        347,
-        448,
-        480,
-        490
-    ],
-    "Calcium": [
-        43,
-        44,
-        85,
-        112,
-        113,
-        116,
-        341,
-        348,
-        349,
-        383,
-        586
-    ],
-    "Cholesterol": [
-        26,
-        27,
-        347,
-        363,
-        448,
-        452
-    ],
-    "Creatinine": [
-        23,
-        44,
-        112,
-        113,
-        227,
-        255,
-        348,
-        372,
-        383,
-        414
-    ],
-    "C-reactive protein": [
-        26,
-        27,
-        347
-    ],
-    "Heel bone mineral density (BMD)": [
-        43,
-        58
-    ],
-    "Mean platelet (thrombocyte) volume": [
-        58,
-        61,
-        676
-    ],
-    "Heel bone mineral density (BMD) T-score, automated (right)": [
-        43,
-        58,
-        378
-    ],
-    "Comparative height size at age 10": [
-        26,
-        43
-    ],
-    "Cystatin C": [
-        112,
-        113,
-        114,
-        255,
-        367,
-        383,
-        414
-    ],
-    "Gamma glutamyltransferase": [
-        26,
-        27,
-        347
-    ],
-    "Glycated haemoglobin (HbA1c)": [
-        33,
-        58,
-        61,
-        625,
-        674,
-        677,
-        679
-    ],
-    "HDL cholesterol": [
-        26,
-        27,
-        347
-    ],
-    "IGF-1": [
-        26,
-        27,
-        116,
-        341,
-        347
-    ],
-    "LDL direct": [
-        26,
-        27,
-        347
-    ],
-    "Phosphate": [
-        43,
-        222,
-        414,
-        490
-    ],
-    "SHBG": [
-        26,
-        27,
-        347
-    ],
-    "Total protein": [
-        26,
-        27,
-        58,
-        347,
-        677
-    ],
-    "Triglycerides": [
-        26,
-        27,
-        285,
-        347,
-        363,
-        448
-    ],
-    "Vitamin D": [
-        26,
-        42,
-        113,
-        347,
-        367
-    ],
-    "Birth weight known": [
-        2,
-        79,
-        413,
-        423
-    ],
-    "Snoring": [
-        44,
-        450
-    ],
-    "Milk type used": [
-        97,
-        98,
-        472
-    ],
-    "Spread type": [
-        26,
-        27,
-        97,
-        370,
-        448,
-        464
-    ],
-    "Cereal type": [],
-    "Major dietary changes in the last 5 years": [
-        26,
-        27,
-        257,
-        363
-    ],
-    "Breastfed as a baby": [
-        97,
-        98,
-        472
-    ],
-    "Handedness (chirality/laterality)": [
-        0,
-        1,
-        9,
-        355
-    ],
-    "Hair colour (natural, before greying)": [
-        40,
-        42,
-        380
-    ],
-    "Sensitivity / hurt feelings": [
-        1,
-        9,
-        76,
-        355,
-        370
-    ],
-    "Non-cancer illness code, self-reported": [
-        41,
-        60,
-        61,
-        346,
-        351,
-        373
-    ],
-    "Treatment/medication code": [
-        3,
-        5,
-        24,
-        26,
-        27,
-        33,
-        37,
-        45,
-        129,
-        346,
-        347,
-        359,
-        369,
-        448,
-        454,
-        539,
-        588
-    ],
-    "Operation code": [
-        5,
-        22,
-        25,
-        27,
-        85,
-        361,
-        625,
-        654
-    ],
-    "Illnesses of father": [
         12,
-        13,
-        14,
-        22,
-        26,
-        349,
-        361
-    ],
-    "Illnesses of mother": [
-        2,
-        182,
-        283,
-        376,
-        382
-    ],
-    "Illnesses of siblings": [
-        0,
-        1,
-        12,
-        60,
-        61,
-        346,
-        351,
-        353
-    ],
-    "Smoking status": [
-        47,
-        134,
-        138
-    ],
-    "Alcohol drinker status": [
-        1,
         26,
         27,
-        347,
-        370
-    ],
-    "Risk taking": [
-        1,
-        9,
-        355
-    ],
-    "Wears glasses or contact lenses": [
-        107,
-        115
-    ],
-    "Hearing difficulty/problems with background noise": [
-        355
-    ],
-    "Back pain for 3+ months": [
         43,
-        44,
-        116
-    ],
-    "Chest pain or discomfort walking normally": [
-        22,
-        198
-    ],
-    "PM: final answer": [
-        23,
-        25,
-        27,
-        562,
-        624,
-        625
-    ],
-    "FI7 : synonym": [
-        26,
-        27,
-        448
-    ],
-    "Qualifications": [],
-    "Current employment status": [],
-    "Never eat eggs, dairy, wheat, sugar": [
-        26,
-        27,
-        59,
         347,
-        429
-    ],
-    "Mouth/teeth dental problems": [
-        94,
-        110,
-        450
-    ],
-    "Fractured bone site(s)": [
-        43,
-        58,
-        677,
-        678
-    ],
-    "Medication for pain relief, constipation, heartburn": [
-        27,
-        89,
-        186,
-        452,
-        546,
-        558
-    ],
-    "Vitamin and mineral supplements": [
-        26,
-        27,
-        215,
-        255,
-        347,
-        348,
-        641
-    ],
-    "Leisure/social activities": [
-        1,
-        9,
-        76,
-        355
-    ],
-    "Types of transport used (excluding work)": [],
-    "Types of physical activity in last 4 weeks": [
-        22,
-        44,
-        116,
-        341,
-        343
-    ],
-    "Time spend outdoors in summer": [
-        0,
-        1,
-        9,
-        355
-    ],
-    "Length of mobile phone use": [
-        0,
-        1,
-        418
-    ],
-    "Weekly usage of mobile phone in last 3 months": [
-        0,
-        1,
-        9,
-        355
-    ],
-    "Difference in mobile phone use compared to two years previously": [],
-    "Sleep duration": [
-        0,
-        1,
-        9,
-        355,
-        370,
-        418
-    ],
-    "Morning/evening person (chronotype)": [
-        0,
-        1,
-        355
-    ],
-    "Current tobacco smoking": [
-        47,
-        105,
-        111
-    ],
-    "Past tobacco smoking": [
-        47,
-        105,
-        245
-    ],
-    "Smoking/smokers in household": [
-        47,
-        105,
-        448
-    ],
-    "Cooked vegetable intake": [
-        1,
-        418
-    ],
-    "Salad / raw vegetable intake": [
-        59,
-        186,
-        360,
-        546
-    ],
-    "Oily fish intake": [
-        0,
-        22,
-        26,
-        27,
-        347,
-        370
-    ],
-    "Non-oily fish intake": [
-        26,
-        27,
-        59,
-        236,
-        347,
-        363
-    ],
-    "Processed meat intake": [
-        26,
-        59,
-        360
-    ],
-    "Number of self-reported non-cancer illnesses": [
-        41,
-        62,
-        351,
-        392
-    ],
-    "Cheese intake": [
-        59,
-        243,
-        257,
-        360,
-        397
-    ],
-    "Salt added to food": [
-        112,
-        113,
-        114,
-        367,
-        383
-    ],
-    "Coffee intake": [
-        26,
-        27,
-        347
-    ],
-    "Variation in diet": [
-        26,
-        59,
-        257,
-        448
-    ],
-    "Average weekly beer plus cider intake": [
-        26,
-        27,
-        347,
-        448
-    ],
-    "Skin colour": [
-        40,
-        42,
-        92,
-        344,
-        380
-    ],
-    "Facial ageing": [
-        40,
-        42,
-        344
-    ],
-    "Interpolated Year when operation took place": [],
-    "Birth weight": [
-        2,
-        658
-    ],
-    "Frequency of feeling guilt or remorse after drinking alcohol in last year": [
-        1,
-        9,
-        355
-    ],
-    "Ever contemplated self-harm": [],
-    "Felt very upset when reminded of stressful experience in past month": [
-        1,
-        9,
-        76,
-        355
-    ],
-    "Recent trouble concentrating on things": [
-        0,
-        1,
-        418
-    ],
-    "Recent trouble relaxing": [
-        1,
-        76,
-        355
-    ],
-    "Recent feelings of tiredness or low energy": [
-        44,
-        241,
-        502
-    ],
-    "Recent worrying too much about different things": [
-        1,
-        9,
-        355
-    ],
-    "Overall health rating": [
-        22,
-        26,
-        44,
-        351
-    ],
-    "Age started wearing glasses or contact lenses": [
-        95,
-        107,
-        115,
-        402,
-        557
-    ],
-    "Plays computer games": [
-        0,
-        1,
-        76,
-        355,
-        418
-    ],
-    "Use of sun/uv protection": [
-        40,
-        42,
-        344
-    ],
-    "Frequency of solarium/sunlamp use": [
-        42,
-        92,
-        344,
-        380
-    ],
-    "Mean corpuscular volume": [
-        58,
-        61,
-        346,
-        625
-    ],
-    "Mean corpuscular haemoglobin concentration": [
-        33,
-        34,
-        35,
-        58,
-        61
-    ],
-    "Eosinophill count": [
-        58,
-        61,
-        674,
-        677
-    ],
-    "Lymphocyte percentage": [
-        12,
-        60,
-        62,
-        351,
         354
     ],
-    "Monocyte percentage": [
-        41,
-        392
-    ],
-    "Immature reticulocyte fraction": [
-        58,
-        61,
-        674,
-        675,
-        676,
-        677,
-        678,
-        679,
-        680,
-        681,
-        682,
-        683
-    ],
-    "Potassium in urine": [
-        46,
-        113,
-        348,
-        367
-    ],
-    "Number of correct matches in round": [],
-    "Time to complete round": [
-        22,
-        44,
-        341,
-        343
-    ],
-    "Pulse wave reflection index": [
-        22,
-        83,
-        85,
-        349,
-        361,
-        415
-    ],
-    "3mm cylindrical power (right)": [
-        95,
-        115,
-        402
-    ],
-    "Corneal resistance factor (right)": [
-        95,
-        115,
-        402
-    ],
-    "Number in household": [],
-    "Number of vehicles in household": [],
-    "Average total household income before tax": [],
-    "Job involves heavy manual or physical work": [
-        44,
-        116,
-        117,
-        124
-    ],
-    "Age completed full time education": [
-        0,
-        1,
-        9,
-        355,
-        418
-    ],
-    "Number of days/week walked 10+ minutes": [
-        44,
-        358
-    ],
-    "Duration of walks": [
-        0,
-        1,
-        44,
-        343,
-        418
-    ],
-    "Number of days/week of vigorous physical activity 10+ minutes": [
-        22,
-        44,
-        124
-    ],
-    "Usual walking pace": [
-        44,
-        343
-    ],
-    "Frequency of stair climbing in last 4 weeks": [
-        44,
-        124
-    ],
-    "LDL direct, adjusted by medication": [
+    "2": [
         26,
         27,
         347
     ],
-    "Mean arterial pressure, manual reading": [
-        22,
-        85
+    "3": [
+        26,
+        27,
+        41,
+        58,
+        346,
+        347
     ],
-    "Non-albumin protein": [
+    "4": [
         26,
         27,
         58,
-        60,
-        61,
         347,
+        448
+    ],
+    "7": [
+        26,
+        27,
+        112,
+        113,
+        255,
+        347,
+        383
+    ],
+    "8": [
+        41,
+        60,
+        62,
+        351,
+        392
+    ],
+    "9": [
+        12,
+        26,
+        27,
+        674,
+        677
+    ],
+    "10": [
+        41,
+        60,
+        62,
+        351,
         354,
         392
     ],
-    "M16 Coxarthrosis [arthrosis of hip]": [
-        43,
-        44,
-        58
-    ],
-    "M17 Gonarthrosis [arthrosis of knee]": [
-        43,
-        58
-    ],
-    "R19 Other symptoms and signs involving the digestive system and abdomen": [
+    "11": [
         26,
         27,
-        59,
-        186,
-        257,
-        431,
-        448,
-        546
+        41,
+        347,
+        392
     ],
-    "Alcohol-related disorders": [
-        0,
-        1,
+    "12": [
         26,
-        27,
-        347
+        41,
+        60,
+        351,
+        392
     ],
-    "Sleep disorders": [
-        0,
+    "3526": [
         1,
         9,
         76,
         355,
-        418
+        669
     ],
-    "Other disorders of circulatory system": [
-        22,
-        83,
-        85,
-        198,
-        349,
-        361,
-        415
-    ],
-    "Diaphragmatic hernia": [
-        116,
-        117,
-        341,
-        343,
-        364
-    ],
-    "Umbilical hernia": [
-        29,
-        423
-    ],
-    "Cholelithiasis": [
-        26,
-        27,
-        242,
-        347,
-        448
-    ],
-    "Urinary calculus": [
-        23,
-        46,
-        383,
-        414
-    ],
-    "Rheumatoid arthritis and other inflammatory polyarthropathies": [
-        41,
-        62,
-        152,
-        351,
-        392
-    ],
-    "Back pain": [
-        44,
-        343
-    ],
-    "Poisoning by antibiotics": [
-        26,
-        27,
-        347
-    ],
-    "GABA agonist|sedative": [
+    "3527": [
         0,
         1,
+        9,
         355,
-        370
+        418
     ],
-    "amoxicillin/clavulanic acid": [
+    "3564": [
         26,
         27,
         59,
-        113,
-        347,
-        383
-    ],
-    "biguanides|diabetes": [
-        26,
-        27,
-        44,
-        347,
-        363
-    ],
-    "latanoprost": [
-        95
+        470,
+        546
     ]
 }

@@ -703,17 +703,32 @@ class Tracks(BaseModel):
     category1: list[tissues1]
     category2: list[tissues2]
 
-# TODO: The chosen sad tracks are somewhat random, so they change if they are genereated again.
+# The chosen sad tracks are somewhat random, so they change if they are genereated again.
+# With the perform_union parameter, we merge the newly found tracks together with the ones
+# we found before.
 
-def generate_sad_tracks(phenotype, model="gpt-4o", perform_lookup=True, perform_union=True):
+def generate_sad_tracks(index, phenotype, trait_type, category=None, explanation=None, model="gpt-4o", perform_lookup=True, perform_union=True):
     """
     Returns a list of relevant SAD tracks for the phenotype using an OpenAI language model.
 
     Parameters:
-        phenotype (str): Name or description of the phenotype to prompt the language model.
+        index (int): Index in the phenotype manifest (with default ordering) serves 
+            as an identifier of the phenotype.
+        phenotype (str): Name or description of the phenotype to prompt the 
+            language model.
+        trait_type (str): Type of the phenotype (continuous, biomarker,...) to give 
+            more information to the language model. No default value since there 
+            are no NA's in the phenotype manifest column.
+        category (str): Category of the phenotype given in the phenotype manifest as 
+            further information for the language model. We need to be able to handle
+            NA values here.
+        explanation (str): Further description of the phenotype (phenotype manifest 
+            column 'description_more') for further information. There is missing data
+            for this field.
         model (str): Which OpenAI model to use, eg "gpt-4o", "o3-mini", ...
-        perform_lookup (bool): Whether a matching result from an earlier function call should be returned if available.
-        perform_union (bool): Whether earlier indices should be kept.
+        perform_lookup (bool): Whether a matching result from an earlier function 
+            call should be returned if available.
+        perform_union (bool): Whether earlier track should be extended with the new tracks.
 
     Returns:
         sad_tracks (list[int]): The indices of the selected SAD tracks.
@@ -735,9 +750,9 @@ def generate_sad_tracks(phenotype, model="gpt-4o", perform_lookup=True, perform_
             loaded_data = json.load(json_file)
         with open(file_path_unions, "r") as json_file:
             unions_data = json.load(json_file)
-        sad_tracks = loaded_data.get(phenotype)
+        sad_tracks = loaded_data.get(str(index))
         record_available = not (sad_tracks is None)
-        num_unions = unions_data.get(phenotype)
+        num_unions = unions_data.get(str(index))
         if num_unions is None:
             num_unions = 0
 
@@ -759,15 +774,16 @@ def generate_sad_tracks(phenotype, model="gpt-4o", perform_lookup=True, perform_
             The team plans to study several phenotypes and therefore has to choose the most
             relevant sequencing tracks.
             Phenotypes might be shortened to keywords.
-            For any provided input, first decide what phenotype is being investigated, then
-            assemble a list of functions or anatomical structures of the human body that
-            will influence this phenotype most, then return only the sequenced tissues or cell lines that 
+            For any provided input, consisting of a name, explanation, trait type and categorization,
+            first decide what phenotype is being investigated, then assemble a list of functions or
+            anatomical structures of the human body that will influence this phenotype most, then return only the sequenced tissues or cell lines that 
             contain the clearest information on those functions, excluding the samples that have only
             limited relevance.
             """
 
     reasoning_prompt = """For a genetics project, we have data from different tissue samples.
-            You will be provided with the name of a biological trait and you are to select the most relevant tissue samples for this trait.
+            You will be provided with the name of a biological trait, an explanation, the type of the trait and its categorization within the project.
+            You are to select the most relevant tissue samples for this trait.
             For example, if the input is the name of a blood protein, relevant tissues might be related to blood, bone marrow or the liver.
             If the input is a mineral found in the body, relevant tissues might be from organs that regulate its levels in the organism.
             The options for the tissues are stored in the Enums "tissues1" and tissues2".
@@ -775,11 +791,19 @@ def generate_sad_tracks(phenotype, model="gpt-4o", perform_lookup=True, perform_
     
     prompt = reasoning_prompt if is_o3 else conversational_prompt
 
+    input= f"phenotype: {phenotype}"
+    if trait_type is not None:
+        input += f", trait type: {trait_type}"
+    if category is not None:
+        input += f", categorization: {category}"
+    if explanation is not None:
+        input += f", explanation: {explanation}"
+
     completion = client.beta.chat.completions.parse(
         model=model,
         messages=[
             {"role": "system", "content": prompt},
-            {"role": "user", "content": phenotype},
+            {"role": "user", "content": input},
         ],
         # temperature=0.5,
         # top_p=0.3,
@@ -802,14 +826,14 @@ def generate_sad_tracks(phenotype, model="gpt-4o", perform_lookup=True, perform_
 
     if(is_4o or is_o3):
         if(not record_available):
-            loaded_data[phenotype] = selected_tracks
-            unions_data[phenotype] = 0
+            loaded_data[str(index)] = selected_tracks
+            unions_data[str(index)] = 0
         elif(perform_union):
-            selected_tracks=list(set(loaded_data[phenotype] + selected_tracks))
-            loaded_data[phenotype] = selected_tracks
-            loaded_data[phenotype].sort()
+            selected_tracks=list(set(loaded_data[str(index)] + selected_tracks))
+            loaded_data[str(index)] = selected_tracks
+            loaded_data[str(index)].sort()
             num_unions += 1
-            unions_data[phenotype] = num_unions
+            unions_data[str(index)] = num_unions
         
         with open(file_path, "w") as json_file:
             json.dump(loaded_data, json_file, indent=4)
