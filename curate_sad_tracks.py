@@ -707,7 +707,7 @@ class Tracks(BaseModel):
 # With the perform_union parameter, we merge the newly found tracks together with the ones
 # we found before.
 
-def generate_sad_tracks(index, phenotype, trait_type, category=None, explanation=None, model="gpt-4o", perform_lookup=True, perform_union=True):
+def generate_sad_tracks(index, phenotype, trait_type=None, category=None, explanation=None, model="gpt-4o", perform_lookup=True, perform_union=True):
     """
     Returns a list of relevant SAD tracks for the phenotype using an OpenAI language model.
 
@@ -717,8 +717,7 @@ def generate_sad_tracks(index, phenotype, trait_type, category=None, explanation
         phenotype (str): Name or description of the phenotype to prompt the 
             language model.
         trait_type (str): Type of the phenotype (continuous, biomarker,...) to give 
-            more information to the language model. No default value since there 
-            are no NA's in the phenotype manifest column.
+            more information to the language model.
         category (str): Category of the phenotype given in the phenotype manifest as 
             further information for the language model. We need to be able to handle
             NA values here.
