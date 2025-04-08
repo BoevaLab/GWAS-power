@@ -1,21 +1,17 @@
 #!/bin/bash
-
-#SBATCH -p gpu
 #SBATCH -c 16
-#SBATCH --time=48:00:00
-#SBATCH --mem-per-cpu=6G
-#SBATCH --gres=gpu:rtx4090:1
-#SBATCH --job-name=aitl_loocv_%j
-#SBATCH --output=aitl_loocv_%j.out
+#SBATCH --time=0:45:00
+#SBATCH --mem-per-cpu=4G
+#SBATCH --job-name=gwas_power_%A_%a
+#SBATCH --output=gwas_power_%A_%a.out
+#SBATCH --array=1-758
 
 source ~/.bashrc
-conda activate /cluster/work/boeva/lrabuzin/conda_envs/spatial
+conda activate deepcast_gwas
 
-# Define the input file
-INPUT_FILE="method_parameters_independent_set.txt"
-
-# Define the Python script
-PYTHON_SCRIPT="gwas_snp_selection_fdr_bonf_method.py"
+# Define the input file and Python script
+INPUT_FILE="method_icd_phenotypes.txt"
+PYTHON_SCRIPT="gwas_snp_selection_fdr_bonf_method_updated.py"
 
 # Check if the input file exists
 if [[ ! -f "$INPUT_FILE" ]]; then
@@ -23,10 +19,16 @@ if [[ ! -f "$INPUT_FILE" ]]; then
     exit 1
 fi
 
-# Loop through each line in the input file and call the Python script
-while IFS= read -r input; do
-    echo "Processing input: $input"
-    python3 "$PYTHON_SCRIPT" "$input"
-done < "$INPUT_FILE"
+# Get total number of lines in the input file
+TOTAL_LINES=$(wc -l < "$INPUT_FILE")
+if [[ $SLURM_ARRAY_TASK_ID -gt $TOTAL_LINES ]]; then
+    echo "Error: SLURM_ARRAY_TASK_ID ($SLURM_ARRAY_TASK_ID) is greater than the number of lines in $INPUT_FILE ($TOTAL_LINES)."
+    exit 1
+fi
 
-echo "All inputs processed successfully."
+# Read the line corresponding to the current array task
+input=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$INPUT_FILE")
+echo "Processing input: $input"
+python3 "$PYTHON_SCRIPT" $input
+
+echo "Input processed successfully."
