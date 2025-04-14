@@ -184,12 +184,10 @@ def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_p
     result_df['right_border'] = result_df['pos'] + WINDOW_SIZE
 
     # Process the reference list similarly
-    df_summary_stats_signifcant_list = window_elimination(df_summary_stats_signifcant_list, WINDOW_SIZE)
-    try:
+    if not df_summary_stats_signifcant_list.empty:
+        df_summary_stats_signifcant_list = window_elimination(df_summary_stats_signifcant_list, WINDOW_SIZE)
         df_summary_stats_signifcant_list['left_border'] = df_summary_stats_signifcant_list['pos'] - WINDOW_SIZE
-    except KeyError as e:
-        print(f"KeyError: Column {e} not found while processing dataframe: {df_summary_stats_signifcant_list}")
-    df_summary_stats_signifcant_list['right_border'] = df_summary_stats_signifcant_list['pos'] + WINDOW_SIZE
+        df_summary_stats_signifcant_list['right_border'] = df_summary_stats_signifcant_list['pos'] + WINDOW_SIZE
     
     ## STEP 9: Compute metadata for downstream analyses
     print("Computing metadata", flush=True)
@@ -207,7 +205,7 @@ def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_p
         "num_original_list": len(df_summary_stats_signifcant_list),
         "num_original_coding_snps": num_original_coding_snps,
         "p_value_threshold": p_value_threshold,
-        "percentage_loci_recovered": num_overlapping_loci / len(df_summary_stats_signifcant_list)
+        "percentage_loci_recovered": num_overlapping_loci / len(df_summary_stats_signifcant_list) if len(df_summary_stats_signifcant_list) != 0 else 1
     }
     
     metadata_df = pd.DataFrame([metadata_dict])
