@@ -180,8 +180,9 @@ def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_p
     ## STEP 8: Identify the leading SNPs by eliminating SNPs within WINDOW_SIZE of a leading SNP
     print("Identifying leading snps", flush=True)
     result_df = window_elimination(filtered_df_summary_stats_result, WINDOW_SIZE)
-    result_df['left_border'] = result_df['pos'] - WINDOW_SIZE
-    result_df['right_border'] = result_df['pos'] + WINDOW_SIZE
+    if not result_df.empty:
+        result_df['left_border'] = result_df['pos'] - WINDOW_SIZE
+        result_df['right_border'] = result_df['pos'] + WINDOW_SIZE
 
     # Process the reference list similarly
     if not df_summary_stats_signifcant_list.empty:
@@ -193,7 +194,7 @@ def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_p
     print("Computing metadata", flush=True)
     num_snps_found = len(result_df)
     num_coding_snps_found = len(result_df[result_df['in_coding_region']])
-    num_overlapping_snps = len(pd.merge(result_df, df_summary_stats_signifcant_list, left_on='snp', right_on='snp'))
+    num_overlapping_snps = len(pd.merge(result_df, df_summary_stats_signifcant_list, left_on='snp', right_on='snp')) if not result_df.empty else 0
     num_overlapping_loci = overlaps(df_summary_stats_signifcant_list, result_df)
     num_original_coding_snps = len(df_summary_stats_signifcant_list[df_summary_stats_signifcant_list["in_coding_region"]])
 
@@ -234,6 +235,11 @@ if __name__ == "__main__":
     coding_snp_list_path = sys.argv[3]
     track_list = sys.argv[4] if len(sys.argv) > 4 else None
 
+    # We use the base name of the summary stats file (without extension) as the phenotype name.
+    phenotype_name = os.path.splitext(os.path.basename(file_path_summary_stats))[0]
+    output_folder = os.path.join("deepcast_phenotypes", phenotype_name)
+    os.makedirs(output_folder, exist_ok=False)
+
     selected_columns = ['chr', 'pos', 'ref', 'alt', 'neglog10_pval_EUR']
 
     print("Opening sumstats", flush=True)
@@ -251,11 +257,6 @@ if __name__ == "__main__":
     result_df, metadata_df, df_summary_stats_signifcant_list = main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_path)
     
     # Save results in deepcast_phenotypes folder under a subfolder for the phenotype.
-    # We use the base name of the summary stats file (without extension) as the phenotype name.
-    phenotype_name = os.path.splitext(os.path.basename(file_path_summary_stats))[0]
-    output_folder = os.path.join("deepcast_phenotypes", phenotype_name)
-    os.makedirs(output_folder, exist_ok=True)
-    
     result_df.to_csv(os.path.join(output_folder, "result_df.csv"), index=False)
     metadata_df.to_csv(os.path.join(output_folder, "metadata_df.csv"), index=False)
     df_summary_stats_signifcant_list.to_csv(os.path.join(output_folder, "df_summary_stats_signifcant_list.csv"), index=False)
