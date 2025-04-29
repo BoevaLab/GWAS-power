@@ -4,3 +4,15 @@
 # <index in the phenotype manifest> <any further information (ignored when reading in the data)>
 113 (Cereal type)
 3553 (Current employment status)
+1741
+3526
+3527
+3667
+3952
+4017
+4069
+4314
+4451
+4452
+4453
+7043
