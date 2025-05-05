@@ -40,10 +40,11 @@ def load_metadata():
     print(f"Successfully loaded metadata from {len(metadata_list)} directories")
     return pd.concat(metadata_list, ignore_index=True)
 
-def create_performance_plots(metadata_df):
+def create_performance_plots(metadata_df, alpha = None):
     """Create various performance comparison plots."""
     # Create output directory if it doesn't exist
-    os.makedirs('visualization_output', exist_ok=True)
+    output_folder = 'visualization_output' if alpha == None else f'visualization_output/plots_{alpha}'
+    os.makedirs(output_folder, exist_ok=True)
     
     # 1. Overall SNP Discovery Comparison
     plt.figure(figsize=(12, 6))
@@ -55,7 +56,7 @@ def create_performance_plots(metadata_df):
     plt.title('SNP Discovery Comparison')
     plt.legend()
     plt.tight_layout()
-    plt.savefig('visualization_output/snps_discovery_comparison.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/snps_discovery_comparison.png', dpi=300, bbox_inches='tight')
     plt.close()
 
     # 2. Coding SNP Discovery Comparison
@@ -69,7 +70,7 @@ def create_performance_plots(metadata_df):
     plt.title('Coding SNP Discovery Comparison')
     plt.legend()
     plt.tight_layout()
-    plt.savefig('visualization_output/coding_snps_discovery_comparison.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/coding_snps_discovery_comparison.png', dpi=300, bbox_inches='tight')
     plt.close()
 
     # 3. Overlap Analysis
@@ -80,7 +81,7 @@ def create_performance_plots(metadata_df):
     plt.ylabel('Number of Phenotypes')
     plt.title('Distribution of SNP Recovery Rate')
     plt.tight_layout()
-    plt.savefig('visualization_output/snp_recovery_distribution.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/snp_recovery_distribution.png', dpi=300, bbox_inches='tight')
     plt.close()
 
     # 4. Loci Recovery
@@ -93,7 +94,7 @@ def create_performance_plots(metadata_df):
     plt.title('Loci Recovery Comparison')
     plt.legend()
     plt.tight_layout()
-    plt.savefig('visualization_output/loci_recovery_comparison.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/loci_recovery_comparison.png', dpi=300, bbox_inches='tight')
     plt.close()
 
     # 5. Additional Discovery Analysis
@@ -108,7 +109,7 @@ def create_performance_plots(metadata_df):
     plt.title('Additional SNP Discovery')
     plt.legend()
     plt.tight_layout()
-    plt.savefig('visualization_output/additional_snps_discovery.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/additional_snps_discovery.png', dpi=300, bbox_inches='tight')
     plt.close()
 
     # 6. Relative Increase Analysis
@@ -153,7 +154,7 @@ def create_performance_plots(metadata_df):
     plt.title('Top 10 Phenotypes by Relative Increase')
     
     plt.tight_layout()
-    plt.savefig('visualization_output/relative_increase_analysis.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/relative_increase_analysis.png', dpi=300, bbox_inches='tight')
     plt.close()
 
     # 7. Detailed SNP Recovery Analysis
@@ -196,7 +197,7 @@ def create_performance_plots(metadata_df):
     plt.title('Additional vs Recovered SNPs')
     
     plt.tight_layout()
-    plt.savefig('visualization_output/detailed_snp_recovery_analysis.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/detailed_snp_recovery_analysis.png', dpi=300, bbox_inches='tight')
     plt.close()
 
     # 8. Performance Summary
@@ -213,24 +214,26 @@ def create_performance_plots(metadata_df):
     }
     
     # Save summary statistics
-    with open('visualization_output/performance_summary.txt', 'w') as f:
+    with open(f'{output_folder}/performance_summary.txt', 'w') as f:
         f.write("Performance Summary:\n")
         for key, value in summary_stats.items():
             f.write(f"{key}: {value:.3f}\n")
 
-def create_phenotype_specific_plots(metadata_df):
+def create_phenotype_specific_plots(metadata_df, alpha = None):
     """Create plots for specific phenotype categories."""
     # Group phenotypes by type (continuous vs categorical)
     metadata_df['phenotype_type'] = metadata_df['phenotype'].apply(
         lambda x: 'Continuous' if x.startswith('continuous') else 'Categorical'
     )
+
+    output_folder = 'visualization_output' if alpha == None else f'visualization_output/plots_{alpha}'
     
     # Compare performance between continuous and categorical phenotypes
     plt.figure(figsize=(12, 6))
     sns.boxplot(x='phenotype_type', y='percentage_loci_recovered', data=metadata_df)
     plt.title('Loci Recovery Rate by Phenotype Type')
     plt.tight_layout()
-    plt.savefig('visualization_output/phenotype_type_comparison.png', dpi=300, bbox_inches='tight')
+    plt.savefig(f'{output_folder}/phenotype_type_comparison.png', dpi=300, bbox_inches='tight')
     plt.close()
 
     # Additional phenotype type comparisons
@@ -241,7 +244,7 @@ def create_phenotype_specific_plots(metadata_df):
         plt.title(f'{metric.replace("_", " ").title()} by Phenotype Type')
         plt.xticks(rotation=45)
         plt.tight_layout()
-        plt.savefig(f'visualization_output/{metric}_by_phenotype_type.png', dpi=300, bbox_inches='tight')
+        plt.savefig(f'{output_folder}/{metric}_by_phenotype_type.png', dpi=300, bbox_inches='tight')
         plt.close()
 
 def main():
