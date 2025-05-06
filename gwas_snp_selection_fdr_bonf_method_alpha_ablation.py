@@ -317,15 +317,24 @@ def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_p
     print("4. Calculating statistical significance", flush=True)
     # T-test for SAD significance
     track_data = df_summary_stats_result[sad_columns].to_numpy()
-    _, p_values = ttest_1samp(track_data, popmean=0, axis=1, nan_policy='omit')
-    df_summary_stats_result['t_test_p_value'] = p_values
+    mean = np.mean(track_data)
+    sd = np.std(track_data)
+
+    # From the old code:
+    # _, p_values = ttest_1samp(track_data, popmean=0, axis=1, nan_policy='omit')
+    # df_summary_stats_result['t_test_p_value'] = p_values
 
     # Multiple testing correction
-    all_p_values = df_summary_stats_result['t_test_p_value'].to_numpy()
+    # TODO: for code review: can I just drop this one?? isn't this the same as p_values?
+    # all_p_values = df_summary_stats_result['t_test_p_value'].to_numpy()
+
     n_snps_prev = len(df_summary_stats_result)
-    fdr_significant_mask, adjusted_p_values, _, _ = multipletests(all_p_values, alpha=alpha, method='fdr_bh')
-    df_summary_stats_result['adjusted_t_test_p_value'] = adjusted_p_values
-    df_summary_stats_result['fdr_significant'] = fdr_significant_mask
+    
+    # fdr_significant_mask, adjusted_p_values, _, _ = multipletests(all_p_values, alpha=alpha, method='fdr_bh')
+    # df_summary_stats_result['adjusted_t_test_p_value'] = adjusted_p_values
+    # df_summary_stats_result['fdr_significant'] = fdr_significant_mask
+
+    df_summary_stats_result['sad_relevant'] = (track_data < mean - alpha * sd) + (track_data > mean + alpha * sd)
     
     # Create the reference list
     df_summary_stats_signifcant_list = df_summary_stats_result[df_summary_stats_result['p_value'] < 5e-8].reset_index(drop=True)
@@ -339,8 +348,8 @@ def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_p
     ## STEP 5: Compute significance threshold
     print("5. Computing adjusted significance threshold", flush=True)
     # Get the significant SNP list
-    fdr_significant_snps = df_summary_stats_result[df_summary_stats_result['fdr_significant'] | df_summary_stats_result['in_coding_region']]
-    n_snps_curr = len(fdr_significant_snps)
+    method_relevant_snps = df_summary_stats_result[df_summary_stats_result['sad_relevant'] | df_summary_stats_result['in_coding_region']]
+    n_snps_curr = len(method_relevant_snps)
     
     # Calculate new p-value threshold
     p_value_threshold = 5e-8 * (n_snps_prev / n_snps_curr) if n_snps_curr > 0 else 5e-8
@@ -368,7 +377,7 @@ def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_p
     if ld_based:
         print(f"   - Using LD-based clumping with p < {p_value_threshold:.2e}", flush=True)
         result_df = ld_based_clumping(
-            fdr_significant_snps, 
+            method_relevant_snps, 
             plink_path, 
             ld_reference_path,
             p_threshold=p_value_threshold,
@@ -378,7 +387,7 @@ def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_p
     else:
         print(f"   - Using window-based approach with {WINDOW_SIZE}bp window", flush=True)
         # Filter by p-value first
-        filtered_df = fdr_significant_snps[fdr_significant_snps['p_value'] < p_value_threshold]
+        filtered_df = method_relevant_snps[method_relevant_snps['p_value'] < p_value_threshold]
         result_df = window_elimination(filtered_df, WINDOW_SIZE)
         
         if not result_df.empty:
