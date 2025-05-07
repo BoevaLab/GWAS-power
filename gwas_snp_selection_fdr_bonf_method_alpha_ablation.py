@@ -334,7 +334,7 @@ def main(df_summary_stats, directory_1000_genomes, track_list, coding_snp_list_p
     # df_summary_stats_result['adjusted_t_test_p_value'] = adjusted_p_values
     # df_summary_stats_result['fdr_significant'] = fdr_significant_mask
 
-    df_summary_stats_result['sad_relevant'] = (track_data < mean - alpha * sd) + (track_data > mean + alpha * sd)
+    df_summary_stats_result['sad_relevant'] = ((track_data < mean - alpha * sd) + (track_data > mean + alpha * sd)).any(axis=1)
     
     # Create the reference list
     df_summary_stats_signifcant_list = df_summary_stats_result[df_summary_stats_result['p_value'] < 5e-8].reset_index(drop=True)
