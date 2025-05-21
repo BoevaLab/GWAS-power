@@ -8,3 +8,6 @@ __pycache__
 DEPRECATED_tracklists
 deepcast_alpha_ablation
 visualization_output
+deepcast_sd_ablation
+alpha_ablation_visualization_output
+results_1_sd_runtime

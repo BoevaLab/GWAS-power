@@ -40,10 +40,10 @@ def load_metadata():
     print(f"Successfully loaded metadata from {len(metadata_list)} directories")
     return pd.concat(metadata_list, ignore_index=True)
 
-def create_performance_plots(metadata_df, alpha = None):
+def create_performance_plots(metadata_df, output_folder_name='visualization_output', alpha = None):
     """Create various performance comparison plots."""
     # Create output directory if it doesn't exist
-    output_folder = 'visualization_output' if alpha == None else f'visualization_output/plots_{alpha}'
+    output_folder = output_folder_name if alpha == None else f'{output_folder_name}/plots_{alpha}'
     os.makedirs(output_folder, exist_ok=True)
     
     # 1. Overall SNP Discovery Comparison
@@ -207,8 +207,8 @@ def create_performance_plots(metadata_df, alpha = None):
         'Average Additional SNPs Found': (metadata_df['num_snps_found'] - metadata_df['num_overlapping_snps']).mean(),
         'Average Additional Coding SNPs': (metadata_df['num_coding_snps_found'] - metadata_df['num_original_coding_snps']).mean(),
         'Number of Phenotypes': len(metadata_df),
-        'Median SNP Recovery Rate': metadata_df['num_overlapping_snps'].median() / metadata_df['num_original_list'].median(),
-        'Median Loci Recovery Rate': metadata_df['num_overlapping_loci'].median() / metadata_df['num_original_list'].median(),
+        'Median SNP Recovery Rate': metadata_df['num_overlapping_snps'].median() / metadata_df['num_original_list'].median() if metadata_df['num_original_list'].median()!=0 else 1,
+        'Median Loci Recovery Rate': metadata_df['num_overlapping_loci'].median() / metadata_df['num_original_list'].median() if metadata_df['num_original_list'].median()!=0 else 1,
         'Average Relative Increase': ((metadata_df['num_snps_found'] - metadata_df['num_original_list']) / metadata_df['num_original_list']).mean(),
         'Median Relative Increase': ((metadata_df['num_snps_found'] - metadata_df['num_original_list']) / metadata_df['num_original_list']).median()
     }
@@ -219,14 +219,14 @@ def create_performance_plots(metadata_df, alpha = None):
         for key, value in summary_stats.items():
             f.write(f"{key}: {value:.3f}\n")
 
-def create_phenotype_specific_plots(metadata_df, alpha = None):
+def create_phenotype_specific_plots(metadata_df, output_folder_name='visualization_output', alpha = None):
     """Create plots for specific phenotype categories."""
     # Group phenotypes by type (continuous vs categorical)
     metadata_df['phenotype_type'] = metadata_df['phenotype'].apply(
         lambda x: 'Continuous' if x.startswith('continuous') else 'Categorical'
     )
 
-    output_folder = 'visualization_output' if alpha == None else f'visualization_output/plots_{alpha}'
+    output_folder = output_folder_name if alpha == None else f'{output_folder_name}/plots_{alpha}'
     
     # Compare performance between continuous and categorical phenotypes
     plt.figure(figsize=(12, 6))
