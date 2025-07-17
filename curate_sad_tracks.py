@@ -1,3 +1,4 @@
+from pathlib import Path
 from openai import OpenAI
 from enum import Enum
 from pydantic import BaseModel
@@ -707,6 +708,7 @@ class Tracks(BaseModel):
 # With the perform_union parameter, we merge the newly found tracks together with the ones
 # we found before.
 
+# TODO possibly remove/rework perform_union, perform_lookup parameters
 def generate_sad_tracks(index, phenotype, trait_type=None, category=None, explanation=None, model="gpt-4o", perform_lookup=True, perform_union=True):
     """
     Returns a list of relevant SAD tracks for the phenotype using an OpenAI language model.
@@ -737,15 +739,24 @@ def generate_sad_tracks(index, phenotype, trait_type=None, category=None, explan
     is_o3 = model=="o3-mini"
 
     # Reading data back from JSON file
+    dir_path = Path('tracklists/intermediate_files/test') # TODO change back
     if(is_4o):
-        file_path = "track_lists_4o.json"
-        file_path_unions = "num_unions_4o.json"
+        file_path = dir_path / "track_lists_4o.json"
+        file_path_unions = dir_path / "num_unions_4o.json"
     elif(is_o3):
-        file_path = "track_lists_o3.json"
-        file_path_unions = "num_unions_o3.json"
+        file_path = dir_path / "track_lists_o3.json"
+        file_path_unions = dir_path / "num_unions_o3.json"
     else:
         raise ValueError('The specified version of ChatGPT is currently not supported. Choose from "gpt-4o" or "o3-mini" or modify the code.')
 
+    if not file_path.exists():
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(file_path, 'w') as f:
+            json.dump({}, f, indent=4)
+    if not file_path_unions.exists():
+        file_path_unions.parent.mkdir(parents=True, exist_ok=True)
+        with open(file_path_unions, 'w') as f:
+            json.dump({}, f, indent=4)
 
     with open(file_path, "r") as json_file:
         loaded_data = json.load(json_file)
@@ -762,6 +773,7 @@ def generate_sad_tracks(index, phenotype, trait_type=None, category=None, explan
             print(f"Returning pre-cached value from {file_path}")
             return sad_tracks
     
+    # specify your OPENAI_API_KEY in .env locally (and make sure to add the .env to the gitignore)
     load_dotenv(".env")
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -777,9 +789,9 @@ def generate_sad_tracks(index, phenotype, trait_type=None, category=None, explan
             Phenotypes might be shortened to keywords.
             For any provided input, consisting of a name, explanation, trait type and categorization,
             first decide what phenotype is being investigated, then assemble a list of functions or
-            anatomical structures of the human body that will influence this phenotype most, then return only the sequenced tissues or cell lines that 
-            contain the clearest information on those functions, excluding the samples that have only
-            limited relevance.
+            anatomical structures of the human body that will influence this phenotype most, then 
+            return only the sequenced tissues or cell lines that contain the clearest information on 
+            those functions and structures, excluding the samples that have only limited relevance.
             """
 
     reasoning_prompt = """For a genetics project, we have data from different tissue samples.
@@ -817,7 +829,7 @@ def generate_sad_tracks(index, phenotype, trait_type=None, category=None, explan
         selected_tracks = [int(tissue.name[1:]) for tissue in event.category1+event.category2]
     else:
         selected_tracks=[]
-        print("GPT output is None, use empty track_list")
+        print("GPT output is None, use empty track list")
 
     length_with_duplicates = len(selected_tracks)
     selected_tracks = list(set(selected_tracks))
@@ -830,9 +842,14 @@ def generate_sad_tracks(index, phenotype, trait_type=None, category=None, explan
             loaded_data[str(index)] = selected_tracks
             unions_data[str(index)] = 0
         elif(perform_union):
-            selected_tracks=list(set(loaded_data[str(index)] + selected_tracks))
-            loaded_data[str(index)] = selected_tracks
-            loaded_data[str(index)].sort()
+            current_tracks: list[int] = loaded_data[str(index)]
+            for track in selected_tracks:
+                if track in current_tracks:
+                    current_tracks.remove(track)
+                    current_tracks.insert(0, track)
+                else:
+                    current_tracks.append(track)
+            loaded_data[str(index)] = current_tracks
             num_unions += 1
             unions_data[str(index)] = num_unions
         
