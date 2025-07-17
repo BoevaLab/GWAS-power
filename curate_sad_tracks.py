@@ -703,7 +703,7 @@ class Tracks(BaseModel):
     category1: list[tissues1]
     category2: list[tissues2]
 
-# The chosen sad tracks are somewhat random, so they change if they are genereated again.
+# The chosen sad tracks are somewhat random, so they change if they are generated again.
 # With the perform_union parameter, we merge the newly found tracks together with the ones
 # we found before.
 
@@ -743,22 +743,24 @@ def generate_sad_tracks(index, phenotype, trait_type=None, category=None, explan
     elif(is_o3):
         file_path = "track_lists_o3.json"
         file_path_unions = "num_unions_o3.json"
+    else:
+        raise ValueError('The specified version of ChatGPT is currently not supported. Choose from "gpt-4o" or "o3-mini" or modify the code.')
 
-    if(is_4o or is_o3):
-        with open(file_path, "r") as json_file:
-            loaded_data = json.load(json_file)
-        with open(file_path_unions, "r") as json_file:
-            unions_data = json.load(json_file)
-        sad_tracks = loaded_data.get(str(index))
-        record_available = not (sad_tracks is None)
-        num_unions = unions_data.get(str(index))
-        if num_unions is None:
-            num_unions = 0
 
-        if(perform_lookup & record_available):
-            if isinstance(sad_tracks, list) and all(isinstance(n, int) for n in sad_tracks):
-                print(f"Returning pre-cached value from {file_path}")
-                return sad_tracks
+    with open(file_path, "r") as json_file:
+        loaded_data = json.load(json_file)
+    with open(file_path_unions, "r") as json_file:
+        unions_data = json.load(json_file)
+    sad_tracks = loaded_data.get(str(index))
+    record_available = not (sad_tracks is None)
+    num_unions = unions_data.get(str(index))
+    if num_unions is None:
+        num_unions = 0
+
+    if(perform_lookup & record_available):
+        if isinstance(sad_tracks, list) and all(isinstance(n, int) for n in sad_tracks):
+            print(f"Returning pre-cached value from {file_path}")
+            return sad_tracks
     
     load_dotenv(".env")
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))

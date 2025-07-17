@@ -11,3 +11,7 @@ visualization_output
 deepcast_sd_ablation
 alpha_ablation_visualization_output
 results_1_sd_runtime
+vis_patho_runtime
+investigate_tracklists.ipynb
+gwas_snp_selection.ipynb
+collected_metadata_old.csv
